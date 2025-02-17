@@ -35,7 +35,6 @@ namespace MuiltiHack
             ImGui.Checkbox("bhop", ref bhop);
             if (bhop)
             {
-                ImGui.Begin("bhop");
                 ImGui.DragInt("bhop cooldown", ref cooldown);
                 ImGui.Checkbox("auto bhop", ref autoBhop);
                 ImGui.Checkbox("legit(no crouch)", ref legit);
@@ -44,7 +43,6 @@ namespace MuiltiHack
             ImGui.Checkbox("trigger bot", ref trigger);
             if (trigger)
             {
-                ImGui.Begin("trigger bot");
                 ImGui.DragInt("trigger delay", ref millisecondsDelay);
                 ImGui.Checkbox("auto", ref autoTrigger);
             }
