@@ -4,3 +4,4 @@ This is a light cheat for CS2 that is freely available and modifiable. The cheat
 Special thanks to Swed C# for the tutorial on basics, Bone ESP, and the Swed64 library. His YouTube channel: SwedishTwat (https://www.youtube.com/@SwedishTwat).
 
 P.S. Do not use this cheat against real players on official servers, as it is unfair.
+![multihack](https://github.com/user-attachments/assets/160b2621-3c90-4b72-852a-5ab664e0c556)
