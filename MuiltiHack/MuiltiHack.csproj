@@ -9,7 +9,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="EventSounds\5secBomb.mp3" />
+    <None Remove="EventSounds\bombSoundAt10sec.mp3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="EventSounds\5secBomb.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="EventSounds\bombSoundAt10sec.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="ClickableTransparentOverlay" Version="9.1.0" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
     <PackageReference Include="swed64" Version="1.0.5" />
   </ItemGroup>
 

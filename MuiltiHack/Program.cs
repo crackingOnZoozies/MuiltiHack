@@ -23,11 +23,20 @@ CancellationToken tokenRadar = cancelTokenSourceRadar.Token;
 CancellationTokenSource cancelTokenSourceTrigger = new CancellationTokenSource();
 CancellationToken tokenTrigger = cancelTokenSourceRadar.Token;
 
+CancellationTokenSource cancelTokenSourceFov = new CancellationTokenSource();
+CancellationToken tokenFov = cancelTokenSourceRadar.Token;
+
+CancellationTokenSource cancelTokenSourceBombTimer = new CancellationTokenSource();
+CancellationToken tokenBombTimer = cancelTokenSourceBombTimer.Token;
+
 // Инициализация задач
 Task antiFlash = null;
 Task bhop = null;
 Task radar = null;
-Task trigger = null;    
+Task trigger = null;
+Task FOV = null;
+
+Task bombTimer = null;
 
 while (true)
 {
@@ -36,18 +45,16 @@ while (true)
     {
         if (antiFlash == null || antiFlash.Status != TaskStatus.Running)
         {
-            // Если задача не запущена или завершена, создаем и запускаем новую
-            cancelTokenSourceAntiFlash = new CancellationTokenSource(); // Создаем новый CancellationTokenSource
-            tokenAntiFlash = cancelTokenSourceAntiFlash.Token; // Обновляем токен
+            cancelTokenSourceAntiFlash = new CancellationTokenSource();
+            tokenAntiFlash = cancelTokenSourceAntiFlash.Token;
             antiFlash = new Task(() => Functions.AntiFlash(swed, client, tokenAntiFlash));
             antiFlash.Start();
         }
     }
     else if (antiFlash != null && antiFlash.Status == TaskStatus.Running && !renderer.antiflash)
     {
-        // Если antiflash выключен, но задача все еще работает, отменяем ее
         cancelTokenSourceAntiFlash.Cancel();
-        antiFlash = null; // Сбрасываем задачу, чтобы можно было создать новую при следующем включении
+        antiFlash = null;
     }
 
     // Управление BHop
@@ -55,18 +62,16 @@ while (true)
     {
         if (bhop == null || bhop.Status != TaskStatus.Running)
         {
-            // Если задача не запущена или завершена, создаем и запускаем новую
-            cancelTokenSourceBhop = new CancellationTokenSource(); // Создаем новый CancellationTokenSource
-            tokenBhop = cancelTokenSourceBhop.Token; // Обновляем токен
+            cancelTokenSourceBhop = new CancellationTokenSource();
+            tokenBhop = cancelTokenSourceBhop.Token;
             bhop = new Task(() => Functions.Bhop(swed, client, tokenBhop, renderer));
             bhop.Start();
         }
     }
     else if (bhop != null && bhop.Status == TaskStatus.Running && !renderer.bhop)
     {
-        // Если bhop выключен, но задача все еще работает, отменяем ее
         cancelTokenSourceBhop.Cancel();
-        bhop = null; // Сбрасываем задачу, чтобы можно было создать новую при следующем включении
+        bhop = null;
     }
 
     // Управление Radar
@@ -74,39 +79,51 @@ while (true)
     {
         if (radar == null || radar.Status != TaskStatus.Running)
         {
-            // Если задача не запущена или завершена, создаем и запускаем новую
-            cancelTokenSourceRadar = new CancellationTokenSource(); // Создаем новый CancellationTokenSource
-            tokenRadar = cancelTokenSourceRadar.Token; // Обновляем токен
+            cancelTokenSourceRadar = new CancellationTokenSource();
+            tokenRadar = cancelTokenSourceRadar.Token;
             radar = new Task(() => Functions.Radar(swed, client, tokenRadar));
             radar.Start();
         }
     }
     else if (radar != null && radar.Status == TaskStatus.Running && !renderer.radar)
     {
-        // Если radar выключен, но задача все еще работает, отменяем ее
         cancelTokenSourceRadar.Cancel();
-        radar = null; // Сбрасываем задачу, чтобы можно было создать новую при следующем включении
+        radar = null;
     }
 
-    // Добавление триггера
+    // Управление Trigger
     if (renderer.trigger)
     {
         if (trigger == null || trigger.Status != TaskStatus.Running)
         {
-            // Если задача не запущена или завершена, создаем и запускаем новую
-            cancelTokenSourceTrigger = new CancellationTokenSource(); // Создаем новый CancellationTokenSource
-            tokenTrigger = cancelTokenSourceTrigger.Token; // Обновляем токен
-            trigger = new Task(() => Functions.Trigger(swed, client, tokenTrigger, renderer.millisecondsDelay,renderer.autoTrigger));
+            cancelTokenSourceTrigger = new CancellationTokenSource();
+            tokenTrigger = cancelTokenSourceTrigger.Token;
+            trigger = new Task(() => Functions.Trigger(swed, client, tokenTrigger, renderer.millisecondsDelay, renderer.autoTrigger));
             trigger.Start();
         }
     }
     else if (trigger != null && trigger.Status == TaskStatus.Running && !renderer.trigger)
     {
-        // Если триггер выключен, но задача все еще работает, отменяем ее
         cancelTokenSourceTrigger.Cancel();
-        trigger = null; // Сбрасываем задачу, чтобы можно было создать новую при следующем включении
+        trigger = null;
     }
 
+    // Управление BombTimer
+    if (renderer.bombTimer)
+    {
+        if (bombTimer == null || bombTimer.Status != TaskStatus.Running)
+        {
+            cancelTokenSourceBombTimer = new CancellationTokenSource();
+            tokenBombTimer = cancelTokenSourceBombTimer.Token;
+            bombTimer = new Task(() => Functions.BombTimer(swed, client, tokenBombTimer, renderer));
+            bombTimer.Start();
+        }
+    }
+    else if (bombTimer != null && bombTimer.Status == TaskStatus.Running && !renderer.bombTimer)
+    {
+        cancelTokenSourceBombTimer.Cancel();
+        bombTimer = null;
+    }
 
     Thread.Sleep(10); // Небольшая задержка, чтобы не нагружать процессор
 }

@@ -1,7 +1,9 @@
-﻿using Swed64;
+﻿using NAudio.Wave;
+using Swed64;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -91,7 +93,7 @@ namespace MuiltiHack
                             Thread.Sleep(10);
                             swed.WriteUInt(forcejumpAddress, minusJump);
                         }
-
+                        
                     }
                     else
                     {
@@ -105,7 +107,6 @@ namespace MuiltiHack
         {
             while (true)
             {
-
                 // Проверяем, не была ли запрошена отмена задачи
                 if (token.IsCancellationRequested)
                 {
@@ -185,9 +186,85 @@ namespace MuiltiHack
             Thread.Sleep(2); // let cpu rest
         }
 
+        public static void BombTimer(Swed swed, IntPtr client, CancellationToken token, Renderer renderer)
+        {
+            bool bBombPlanted = false;
+            IntPtr GameRules = swed.ReadPointer(client, Offsets.dwGameRules);
+            if (GameRules != IntPtr.Zero)
+            {
+                bBombPlanted = swed.ReadBool(GameRules, Offsets.m_bBombPlanted);
+                if (bBombPlanted)
+                {
+                    for (int i = 0; i < 40; i++)
+                    {
+                        bBombPlanted = swed.ReadBool(GameRules, Offsets.m_bBombPlanted);
+                        if (!bBombPlanted)
+                            break;
+                        else
+                        {
+                            renderer.timeLeft = 40 - i;
+                            renderer.bombPlanted = true;
+                        }
+                        Thread.Sleep(1000);
+                    }
+                }
+                else
+                {
+                    renderer.timeLeft = -1;
+                    renderer.bombPlanted = false;
+                    Thread.Sleep(5);
+                }
+            }
+        }
+
         //imports
         [DllImport("user32.dll")]
         static extern short GetAsyncKeyState(int vKey);
     }
 
+}
+
+public class AudioPlayer
+{
+    private string soundsFolder;
+
+    public AudioPlayer(string soundsFolderPath)
+    {
+        // Убедимся, что папка существует
+        if (!Directory.Exists(soundsFolderPath))
+        {
+            throw new DirectoryNotFoundException($"Папка {soundsFolderPath} не найдена!");
+        }
+
+        soundsFolder = soundsFolderPath;
+    }
+
+    public void PlaySound(string fileName, float volume = 1.0f)
+    {
+        string filePath = Path.Combine(soundsFolder, fileName);
+
+        // Проверяем, существует ли файл
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine($"Файл {fileName} не найден в папке {soundsFolder}!");
+            return;
+        }
+
+        // Воспроизведение MP3
+        using (var mp3Reader = new Mp3FileReader(filePath))
+        using (var waveOut = new WaveOutEvent())
+        {
+            // Устанавливаем громкость
+            waveOut.Volume = volume;
+
+            waveOut.Init(mp3Reader);
+            waveOut.Play();
+
+            // Ожидание завершения воспроизведения
+            while (waveOut.PlaybackState == PlaybackState.Playing)
+            {
+                System.Threading.Thread.Sleep(100);
+            }
+        }
+    }
 }
