@@ -43,45 +43,50 @@ namespace MuiltiHack
         {
             ImGui.Begin("multiCheat beta legit");
 
-            ImGui.Checkbox("antiflash", ref antiflash);
+            // Секция AntiFlash
+            ImGui.SeparatorText("antiflash Settings");
+            ImGui.Checkbox("Enable AntiFlash", ref antiflash);
 
-            ImGui.Checkbox("radar", ref radar);
+            // Секция Radar
+            ImGui.SeparatorText("radar Settings");
+            ImGui.Checkbox("Enable Radar", ref radar);
 
-            
-            ImGui.Checkbox("bhop", ref bhop);
+            // Секция Bhop
+            ImGui.SeparatorText("bhop Settings");
+            ImGui.Checkbox("Enable Bhop", ref bhop);
             if (bhop)
             {
-                if(ImGui.CollapsingHeader("bhop settings"))
-                {
-                    ImGui.DragInt("bhop cooldown", ref cooldown);
-                    ImGui.Checkbox("auto bhop", ref autoBhop);
-                    ImGui.Checkbox("legit(no crouch)", ref legit);
-                }
-                
+                ImGui.DragInt("Bhop Cooldown", ref cooldown);
+                ImGui.Checkbox("Auto Bhop", ref autoBhop);
+                ImGui.Checkbox("Legit (No Crouch)", ref legit);
             }
 
-            ImGui.Checkbox("trigger bot", ref trigger);
+            //trigger bot
+            ImGui.SeparatorText("triggerbot Settings");
+
+            ImGui.Checkbox("Enable Trigger Bot", ref trigger);
             if (trigger)
             {
-                if(ImGui.CollapsingHeader("trigger settings"))
-                {
-                    ImGui.DragInt("trigger delay", ref millisecondsDelay);
-                    ImGui.Checkbox("auto", ref autoTrigger);
-                }
-                
+                ImGui.DragInt("Trigger Delay", ref millisecondsDelay);
+                ImGui.Checkbox("Auto Trigger", ref autoTrigger);
             }
 
-            ImGui.Checkbox("bomb timer", ref bombTimer);
+            // Секция Bomb Timer
+            ImGui.SeparatorText("Bomb Timer Settings");
+            
+            ImGui.Checkbox("Enable Bomb Timer", ref bombTimer); // Checkbox для включения/выключения bombTimer
 
-
-            if (bombTimer && ImGui.CollapsingHeader("custom sound volume"))
+            if (bombTimer)
             {
-                ImGui.Checkbox("use costom sound", ref enableCustomSoundBombTimer);
-                ImGui.SliderFloat("", ref soundVolume, 0.001f, 1);
+                //ImGui.Text("Bomb Timer Settings");
+                
+                ImGui.Checkbox("Use Custom Sound", ref enableCustomSoundBombTimer);
+                ImGui.SliderFloat("Sound Volume", ref soundVolume, 0.001f, 1);
+
+                // Окно таймера бомбы
                 BombTimer();
             }
 
-            ImGui.End();
         }
 
         // Укажите путь к папке EventSounds
