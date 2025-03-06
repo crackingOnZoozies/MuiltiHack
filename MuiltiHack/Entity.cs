@@ -33,6 +33,14 @@ namespace MuiltiHack
         public bool spotted { get; set; }
         public bool scoped { get; set; }
 
+        public IntPtr pawnAddress { get; set; }
+        public IntPtr controllerPawn { get; set; }
+        public Vector3 view { get; set; }
+        public Vector3 head { get; set; }
+        public Vector2 head2d { get; set; }
+        public uint lifeState { get; set; }
+        public float pixelDistance { get; set; }
+        public bool scopped { get; set; }
 
     }
     public enum BonesIds

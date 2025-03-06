@@ -42,8 +42,7 @@ namespace MuiltiHack
 
         //esp
         private float yOffset = 20; // odfset between text
-        public Vector2 screenSize = new Vector2(1920, 1080);//defaultlt
-
+        
         //enteties copy
         private ConcurrentQueue<Entity> entities = new ConcurrentQueue<Entity>();
         private Entity localPlayer = new Entity();
@@ -67,8 +66,29 @@ namespace MuiltiHack
         private Vector4 hiddenColor = new Vector4(0, 0, 0, 1); //black
         private Vector4 BoneColor = new Vector4(1, 0, 2, 1);
 
+        //aimbot
+        public float FOV = 50; // in pixels
+
+        public bool aimbot = false;
+        public bool silent = false;
+        public bool aimOnTeam = false;
+        public bool aimOnSpotted = true;
+        public bool useFov = false;
+        public bool aimOnClosest = false;
+        public bool followRecoil = false;
+        public bool autoLock = false;
+
+        public bool aimKeySecond = false;
+
+        public int aimDelay = 10;
+
+        public Vector4 circleColor = new Vector4(1, 0, 1, 1);
+
         //draw list
         ImDrawListPtr drawList;
+
+        //screen size
+        public Vector2 screenSize = new Vector2(1920, 1080);//default
 
         protected override void Render()
         {
@@ -116,6 +136,30 @@ namespace MuiltiHack
 
                 // Окно таймера бомбы
                 BombTimer();
+            }
+
+            //aimbot
+            ImGui.SeparatorText("aimbot");
+            ImGui.Checkbox("aimbot in/off", ref aimbot);
+            if (aimbot)
+            {
+                ImGui.Checkbox("aim on closest by diatance", ref aimOnClosest);
+                ImGui.Checkbox("silent", ref silent);
+                ImGui.DragInt("aim delay", ref aimDelay);
+                ImGui.Checkbox("aim on spotted", ref aimOnSpotted);
+                ImGui.Checkbox("use mouse 6 for aiming", ref aimKeySecond);
+                ImGui.Checkbox("autoLock", ref autoLock);
+
+                if (!aimOnClosest) ImGui.Checkbox("fov", ref useFov);
+
+                if (useFov)
+                {
+                    ImGui.SliderFloat("fov", ref FOV, 10, 300.0f);
+                    if (ImGui.CollapsingHeader("Fov circle color"))
+                    {
+                        ImGui.ColorPicker4("##fovcolor", ref circleColor);
+                    }
+                }
             }
 
             //esp menu
@@ -174,25 +218,32 @@ namespace MuiltiHack
 
                 // draw esp overlay
                 DrawOverlay(screenSize);
-                drawList = ImGui.GetWindowDrawList();
+                
 
-                foreach (Entity entity in entities)
+            }
+
+            drawList = ImGui.GetWindowDrawList();
+
+            foreach (Entity entity in entities)
+            {
+                //check if entity in screen
+                if (EntityOnSceen(entity))
                 {
-                    //check if entity in screen
-                    if (EntityOnSceen(entity))
+                    //draw methods (all)
+                    if(enableEsp) 
                     {
-                        //draw methods (all)
                         DrawHealthBar(entity);
-                        if (box) DrawBox(entity);
-                        if (drawLine) DrawLine(entity);
-                        DrawNameAndWeapon(entity);
                         ScopedCheck(entity);
-                        if (enableBones && entity.team != localPlayer.team) DrawBones(entity);
-
                     }
+                    if (box) DrawBox(entity);
+                    if (drawLine) DrawLine(entity);
+                    DrawNameAndWeapon(entity);
+                    if (enableBones && entity.team != localPlayer.team) DrawBones(entity);
 
                 }
+
             }
+
 
         }
 
@@ -451,8 +502,13 @@ namespace MuiltiHack
                 | ImGuiWindowFlags.NoScrollbar
                 | ImGuiWindowFlags.NoScrollWithMouse
                 );
-
+            if (aimbot && useFov)
+            {
+                ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+                drawList.AddCircle(new Vector2(screenSize.X / 2, screenSize.Y / 2), FOV, ImGui.ColorConvertFloat4ToU32(circleColor));
+            }
         }
+        
 
     }
 }

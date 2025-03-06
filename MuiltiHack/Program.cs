@@ -37,12 +37,16 @@ CancellationToken tokenBombTimer = cancelTokenSourceBombTimer.Token;
 CancellationTokenSource cancelTokenSourceESP = new CancellationTokenSource();
 CancellationToken tokenESP = cancelTokenSourceESP.Token;
 
+CancellationTokenSource cancelTokenSourceAimBot = new CancellationTokenSource();
+CancellationToken tokenAimBot = cancelTokenSourceAimBot.Token;
+
 // Инициализация задач
 Task antiFlash = null;
 Task bhop = null;
 Task radar = null;
 Task trigger = null;
 Task ESP = null;
+Task AimBot = null;
 
 Task bombTimer = null;
 
@@ -155,7 +159,23 @@ while (true)
     {
         cancelTokenSourceESP.Cancel();
         ESP = null;
-    } 
+    }
+
+    if (renderer.aimbot)
+    {
+        if(AimBot == null || AimBot.Status != TaskStatus.Running)
+        {
+            cancelTokenSourceAimBot = new CancellationTokenSource();
+            tokenAimBot = cancelTokenSourceAimBot.Token;
+            AimBot = new Task(() => Functions.AimBot(swed, client, entityList, localPlayerPawn, listentry, renderer, tokenESP));
+            AimBot.Start();
+        }
+    }
+    else if (AimBot != null && AimBot.Status == TaskStatus.Running && !renderer.aimbot)
+    {
+        cancelTokenSourceAimBot?.Cancel();
+        AimBot = null;
+    }
 
     Thread.Sleep(10); // Небольшая задержка, чтобы не нагружать процессор
 }
