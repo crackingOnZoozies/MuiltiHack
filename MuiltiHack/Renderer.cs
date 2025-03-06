@@ -1,6 +1,7 @@
 ﻿using ClickableTransparentOverlay;
 using ImGuiNET;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -38,6 +39,36 @@ namespace MuiltiHack
         public int timeLeft = -1;
         public float soundVolume = 0.5f;
         public bool enableCustomSoundBombTimer = false;
+
+        //esp
+        private float yOffset = 0; // before was 20
+        public Vector2 screenSize = new Vector2(1920, 1080);//defaultlt
+
+        //enteties copy
+        private ConcurrentQueue<Entity> entities = new ConcurrentQueue<Entity>();
+        private Entity localPlayer = new Entity();
+        private readonly object entityLock = new object();
+
+        //gui elements
+        public bool enableEsp = false;
+        private bool enableBones = false;
+        private bool enableName = false;
+        private bool enableVisibilityCheck = false;
+        private bool weaponEsp = false;
+        private bool box = false;
+        private bool drawLine = false;
+
+        private float boneThickness = 4;
+
+        private Vector4 enemyColor = new Vector4(1, 0, 0, 1); // red
+        private Vector4 teamColor = new Vector4(0, 1, 0, 1); // green
+        private Vector4 barColor = new Vector4(0, 1, 0, 1);//green
+        private Vector4 nameColor = new Vector4(1, 1, 1, 1); //white
+        private Vector4 hiddenColor = new Vector4(0, 0, 0, 1); //black
+        private Vector4 BoneColor = new Vector4(1, 0, 2, 1);
+
+        //draw list
+        ImDrawListPtr drawList;
 
         protected override void Render()
         {
@@ -87,12 +118,79 @@ namespace MuiltiHack
                 BombTimer();
             }
 
+            //esp menu
+            ImGui.SeparatorText("ESP");
+
+            ImGui.Checkbox("on", ref enableEsp);
+
+            if (enableEsp)
+            {
+                ImGui.Checkbox("weapon esp", ref weaponEsp);
+                ImGui.Checkbox("box", ref box);
+                ImGui.Checkbox("draw line", ref drawLine);
+
+                ImGui.Checkbox("bones", ref enableBones);
+                if (ImGui.CollapsingHeader("bone color"))
+                {
+                    ImGui.ColorPicker4("##Bone color", ref BoneColor);
+
+                }
+
+                ImGui.Checkbox("enable visibility check", ref enableVisibilityCheck);
+                ImGui.Checkbox("enable name", ref enableName);
+
+                //team color
+                if (ImGui.CollapsingHeader("team color"))
+                {
+                    ImGui.ColorPicker4("##teamcolor", ref teamColor);
+                }
+
+                // enemy color
+                if (ImGui.CollapsingHeader("enemy color"))
+                {
+                    ImGui.ColorPicker4("##enemycolor", ref enemyColor);
+                }
+
+                //hp bar color
+                if (ImGui.CollapsingHeader("hp bar color"))
+                {
+                    ImGui.ColorPicker4("##barColor", ref barColor);
+                }
+
+                //name color
+                if (ImGui.CollapsingHeader("name color") && enableName)
+                {
+                    ImGui.ColorPicker4("##namecolor", ref nameColor);
+                }
+
+
+                // draw esp overlay
+                DrawOverlay(screenSize);
+                drawList = ImGui.GetWindowDrawList();
+
+                foreach (Entity entity in entities)
+                {
+                    //check if entity in screen
+                    if (EntityOnSceen(entity))
+                    {
+                        //draw methods (all)
+                        DrawHealthBar(entity);
+                        if (box) DrawBox(entity);
+                        if (drawLine) DrawLine(entity);
+                        DrawNameAndWeapon(entity);
+                        ScopedCheck(entity);
+                        if (enableBones && entity.team != localPlayer.team) DrawBones(entity);
+
+                    }
+
+                }
+            }
+
         }
 
         // Укажите путь к папке EventSounds
         string soundsFolder = Path.Combine(AppContext.BaseDirectory, "EventSounds");
         
-
         void BombTimer()
         {
             AudioPlayer audioPlayer = new AudioPlayer(soundsFolder);
@@ -124,7 +222,228 @@ namespace MuiltiHack
             ImGui.End();
         }
 
-    }
+        //check position
+        bool EntityOnSceen(Entity entity)
+        {
+            if (entity.position2d.X > 0 && entity.position2d.X < screenSize.X && entity.position2d.Y > 0 && entity.position2d.Y < screenSize.Y)
+            {
+                return true;
+            }
+            return false;
+        }
 
+        // drawing ESP methods
+
+        private void DrawBox(Entity entity)
+        {
+            // calc box height
+            float entityHeight = entity.position2d.Y - entity.viewPosition2D.Y;
+
+            //calc box dimensions
+            Vector2 rectTop = new Vector2(entity.viewPosition2D.X - entityHeight / 4, entity.viewPosition2D.Y);
+            Vector2 rectBottom = new Vector2(entity.viewPosition2D.X + entityHeight / 4, entity.viewPosition2D.Y + entityHeight);
+
+            Vector4 boxColor = localPlayer.team == entity.team ? teamColor : enemyColor;
+
+            if (enableVisibilityCheck && localPlayer.team != entity.team)
+            {
+                boxColor = entity.spotted ? boxColor : hiddenColor;
+            }
+
+            // Draw rectangle
+            drawList.AddRect(rectTop, rectBottom, ImGui.ColorConvertFloat4ToU32(boxColor));
+
+
+
+            if (!enableBones)
+            {
+                // Calculate center of the top side of the rectangle
+                Vector2 circleCenter = new Vector2((rectTop.X + rectBottom.X) / 2, rectTop.Y);
+
+                // Calculate radius of the circle (half of the height of the rectangle)
+                float circleRadius = entityHeight / 8.5f;
+
+                // hidden check
+
+
+                // Draw circle
+                drawList.AddCircle(circleCenter, circleRadius, ImGui.ColorConvertFloat4ToU32(boxColor));
+            }
+
+        }
+
+        private void DrawLine(Entity entity)
+        {
+            Vector4 lineColor = localPlayer.team == entity.team ? teamColor : enemyColor;
+            if (enableVisibilityCheck && localPlayer.team != entity.team)
+            {
+                lineColor = entity.spotted ? lineColor : hiddenColor;
+            }
+
+            //draw line
+            drawList.AddLine(new Vector2(screenSize.X / 2, screenSize.Y), entity.position2d, ImGui.ColorConvertFloat4ToU32(lineColor));
+
+        }
+
+        private void DrawHealthBar(Entity entity)
+        {
+            //calc the hp bar height
+            float entityHeight = entity.position2d.Y - entity.viewPosition2D.Y;
+
+            //calc width
+            float boxLeft = entity.viewPosition2D.X - entityHeight / 4 + 0.01f;
+            float boxRight = entity.viewPosition2D.X + entityHeight / 4 + 0.01f;
+
+            //calc health bar width and height
+            float barPercentWidth = 0.05f; // 5% of box width
+            float barHeight = entityHeight * (entity.health / 100f);
+
+            float barPixelWidth = barPercentWidth * (boxRight - boxLeft);
+
+            //calc bar rectangle
+            Vector2 barTop = new Vector2(boxLeft - barPixelWidth, entity.position2d.Y - barHeight);
+            Vector2 barBottom = new Vector2(boxLeft, entity.position2d.Y);
+
+            //get bar color
+
+
+            //drawing 
+            drawList.AddRectFilled(barTop, barBottom, ImGui.ColorConvertFloat4ToU32(barColor));
+
+        }
+        private void DrawNameAndWeapon(Entity entity)
+        {
+            if (enableName)
+            {
+                // Используем расстояние из объекта Entity
+                float distance = entity.distance;
+
+                // Масштабируем размер текста в зависимости от расстояния
+                float textScale = 0.8f / (distance * 0.1f); // Пример формулы масштабирования
+                textScale = Math.Clamp(textScale, 0.5f, 2.0f) * 1.5f; // Ограничиваем минимальный и максимальный размер
+
+                // Позиция для текста (имя)
+                Vector2 textLocation1 = new Vector2(entity.viewPosition2D.X, entity.position2d.Y - yOffset);
+
+                // Устанавливаем размер текста
+                ImGui.SetWindowFontScale(textScale);
+
+                // Отрисовываем текст (имя)
+                drawList.AddText(textLocation1, ImGui.ColorConvertFloat4ToU32(nameColor), $"{entity.name}");
+
+                // Если включено отображение оружия
+            }
+            if (weaponEsp)
+            {
+                // Позиция для текста (оружие)
+                Vector2 textLocation2 = new Vector2(entity.viewPosition2D.X, entity.position2d.Y);
+
+                // Отрисовываем текст (оружие)
+                drawList.AddText(textLocation2, ImGui.ColorConvertFloat4ToU32(nameColor), $"GUN : {entity.currentWeaponName}");
+            }
+
+            // Возвращаем размер текста к значению по умолчанию
+            ImGui.SetWindowFontScale(1.0f);
+
+        }
+        private void ScopedCheck(Entity entity)
+        {
+            Vector2 textLocation = new Vector2(entity.viewPosition2D.X, entity.position2d.Y + yOffset);
+            if (entity.scoped)
+            {
+                drawList.AddText(textLocation, ImGui.ColorConvertFloat4ToU32(nameColor), $"SCOPPED");
+            }
+        }
+        // bones draw methods
+        private void DrawBones(Entity entity)
+        {
+            // get ether team or enemy colorr depending on the team
+            uint uintColor = ImGui.ColorConvertFloat4ToU32(BoneColor);
+
+
+            float currentBoneThickness;
+
+            if (localPlayer.scoped)
+            {
+                currentBoneThickness = boneThickness;
+            }
+            else
+            {
+                currentBoneThickness = boneThickness / entity.distance;
+            }
+
+            //draw lines between bones
+            drawList.AddLine(entity.bones2d[1], entity.bones2d[2], uintColor, currentBoneThickness);
+
+            drawList.AddLine(entity.bones2d[1], entity.bones2d[3], uintColor, currentBoneThickness);
+
+            drawList.AddLine(entity.bones2d[1], entity.bones2d[6], uintColor, currentBoneThickness);
+
+            drawList.AddLine(entity.bones2d[3], entity.bones2d[4], uintColor, currentBoneThickness);
+
+            drawList.AddLine(entity.bones2d[6], entity.bones2d[7], uintColor, currentBoneThickness);
+
+            drawList.AddLine(entity.bones2d[4], entity.bones2d[5], uintColor, currentBoneThickness);
+
+            drawList.AddLine(entity.bones2d[7], entity.bones2d[8], uintColor, currentBoneThickness);
+
+            drawList.AddLine(entity.bones2d[1], entity.bones2d[0], uintColor, currentBoneThickness);
+
+            drawList.AddLine(entity.bones2d[0], entity.bones2d[9], uintColor, currentBoneThickness);
+
+            drawList.AddLine(entity.bones2d[0], entity.bones2d[11], uintColor, currentBoneThickness);
+
+            drawList.AddLine(entity.bones2d[9], entity.bones2d[10], uintColor, currentBoneThickness);
+
+            drawList.AddLine(entity.bones2d[11], entity.bones2d[12], uintColor, currentBoneThickness);
+
+            drawList.AddCircle(entity.bones2d[2], (entity.position2d.Y - entity.viewPosition2D.Y) / 8.5f, uintColor);
+
+
+        }
+
+
+        //transfer entity methods
+
+        public void UpdateEntities(IEnumerable<Entity> newEntities)
+        {
+            entities = new ConcurrentQueue<Entity>(newEntities);
+
+        }
+
+        public void UpdateLocalPlayer(Entity newEntity)
+        {
+            lock (entityLock)
+            {
+                localPlayer = newEntity;
+            }
+        }
+
+        public Entity GetLocalPlayer()
+        {
+            lock (entityLock)
+            {
+                return localPlayer;
+            }
+        }
+
+        // draw overlay
+        void DrawOverlay(Vector2 screenSize)
+        {
+            ImGui.SetNextWindowSize(screenSize);
+            ImGui.SetNextWindowPos(new Vector2(0, 0));
+            ImGui.Begin("overlay", ImGuiWindowFlags.NoDecoration
+                | ImGuiWindowFlags.NoBackground
+                | ImGuiWindowFlags.NoBringToFrontOnFocus
+                | ImGuiWindowFlags.NoMove
+                | ImGuiWindowFlags.NoInputs
+                | ImGuiWindowFlags.NoCollapse
+                | ImGuiWindowFlags.NoScrollbar
+                | ImGuiWindowFlags.NoScrollWithMouse
+                );
+
+        }
+
+    }
 }
 

@@ -51,8 +51,17 @@ namespace MuiltiHack
         public static int m_iFOV = 0x210;
 
         public static int m_pClippingWeapon = 0x13A0;
+        public static int m_iItemDefinitionIndex = 0x1BA;
+        public static int m_AttributeManager = 0x1148;
+        public static int m_Item = 0x50;
 
         public static int m_bBombPlanted = 0x9A5; // bool
+        public static int m_bOldIsScoped = 0x242C; // bool
+
+        //engine
+        public static nint dwWindowHeight = 0x62351C;
+        public static nint dwWindowWidth = 0x623518;
+
 
         public static bool bBombPlanted = false;
 

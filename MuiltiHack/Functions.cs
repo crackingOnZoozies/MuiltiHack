@@ -3,6 +3,7 @@ using Swed64;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -206,6 +207,97 @@ namespace MuiltiHack
                     renderer.bombPlanted = false;
                     Thread.Sleep(5);
                 }
+            }
+        }
+
+        public static void ESP(Swed swed, IntPtr client,IntPtr entityList, IntPtr localPlayerPawn, IntPtr listEntry, Renderer renderer, CancellationToken token)
+        {
+            //get screen size
+            Vector2 screenSize = renderer.screenSize;
+
+            //store enteties
+            List<Entity> entities = new List<Entity>();
+            Entity localPlayer = new Entity();
+
+            while (true)
+            {
+                if (token.IsCancellationRequested)
+                {
+                    Thread.Sleep(10);
+                    continue;
+                }
+
+                entities.Clear();
+
+                //getting our team
+                localPlayer.team = swed.ReadInt(localPlayerPawn, Offsets.m_iTeamNum);
+
+                //loop through entity list
+                for (int i = 1; i < 64; i++)
+                {
+                    if (listEntry == IntPtr.Zero) continue;
+
+                    IntPtr currentController = swed.ReadPointer(listEntry, i * 0x78);
+
+                    if (currentController == IntPtr.Zero) continue;
+
+                    int pawnHandle = swed.ReadInt(currentController, Offsets.m_hPlayerPawn);
+
+                    if (pawnHandle == 0) continue;
+
+                    IntPtr listEntry2 = swed.ReadPointer(entityList, 0x8 * ((pawnHandle & 0x7FFF) >> 9) + 0x10);
+
+                    IntPtr currentPawn = swed.ReadPointer(listEntry2, 0x78 * (pawnHandle & 0x1FF));
+
+                    //check lifestate
+                    int lifeState = swed.ReadInt(currentPawn, Offsets.m_lifeState);
+                    if (lifeState != 256) continue;
+
+                    IntPtr sceneNode = swed.ReadPointer(currentPawn, Offsets.m_pGameSceneNode);
+                    IntPtr boneMatrix = swed.ReadPointer(sceneNode, Offsets.m_modelState + 0x80);
+
+                    //get matrix
+                    float[] viewMatrix = swed.ReadMatrix(client + Offsets.dwViewMatrix);
+
+                    IntPtr currentWeapon = swed.ReadPointer(currentPawn, Offsets.m_pClippingWeapon);
+
+                    // get item defenition index
+                    short weponDefenitionIndex = swed.ReadShort(currentWeapon, Offsets.m_AttributeManager + Offsets.m_Item + Offsets.m_iItemDefinitionIndex);
+
+                    //populate entities
+                    Entity entity = new Entity();
+
+                    entity.spotted = swed.ReadBool(currentPawn, Offsets.m_entitySpottedState + Offsets.m_bSpotted);
+                    entity.scoped = swed.ReadBool(currentPawn, Offsets.m_bOldIsScoped);
+
+                    entity.name = swed.ReadString(currentController, Offsets.m_iszPlayerName, 16).Split("\0")[0];// reading name
+
+                    entity.team = swed.ReadInt(currentPawn, Offsets.m_iTeamNum);
+                    entity.health = swed.ReadInt(currentPawn, Offsets.m_iHealth);// reading hp
+
+                    entity.position = swed.ReadVec(currentPawn, Offsets.m_vOldOrigin);
+                    entity.viewOffset = swed.ReadVec(currentPawn, Offsets.m_vecViewOffset);
+
+                    entity.position2d = Calculate.WordToScreen(viewMatrix, entity.position, screenSize);
+                    entity.viewPosition2D = Calculate.WordToScreen(viewMatrix, Vector3.Add(entity.position, entity.viewOffset), screenSize);
+
+                    entity.distance = Vector3.Distance(entity.position, localPlayer.position);
+
+                    entity.bones = Calculate.ReadBones(boneMatrix, swed);
+
+                    entity.bones2d = Calculate.ReadBones2d(entity.bones, viewMatrix, renderer.screenSize);
+                    entity.currentWeaponIndex = weponDefenitionIndex;
+                    entity.currentWeaponName = Enum.GetName(typeof(Weapon), weponDefenitionIndex);
+                    entities.Add(entity);
+                }
+
+                //update enteties
+                renderer.UpdateLocalPlayer(localPlayer);
+                renderer.UpdateEntities(entities);
+
+                //let spu rest
+                Thread.Sleep(5);
+
             }
         }
 

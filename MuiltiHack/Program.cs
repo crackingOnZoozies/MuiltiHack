@@ -3,12 +3,17 @@ using Swed64;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Numerics;
 
 Swed swed = new Swed("cs2");
 IntPtr client = swed.GetModuleBase("client.dll");
+IntPtr engine = swed.GetModuleBase("engine2.dll");
 
 Renderer renderer = new Renderer();
-renderer.Start().Wait();
+renderer.screenSize = new Vector2(swed.ReadInt(engine + Offsets.dwWindowWidth), swed.ReadInt(engine + Offsets.dwWindowHeight));
+
+Thread rendererThread = new Thread(new ThreadStart(renderer.Start().Wait));
+rendererThread.Start();
 
 // Токены для управления задачами
 CancellationTokenSource cancelTokenSourceAntiFlash = new CancellationTokenSource();
@@ -29,12 +34,15 @@ CancellationToken tokenFov = cancelTokenSourceRadar.Token;
 CancellationTokenSource cancelTokenSourceBombTimer = new CancellationTokenSource();
 CancellationToken tokenBombTimer = cancelTokenSourceBombTimer.Token;
 
+CancellationTokenSource cancelTokenSourceESP = new CancellationTokenSource();
+CancellationToken tokenESP = cancelTokenSourceESP.Token;
+
 // Инициализация задач
 Task antiFlash = null;
 Task bhop = null;
 Task radar = null;
 Task trigger = null;
-Task FOV = null;
+Task ESP = null;
 
 Task bombTimer = null;
 
@@ -132,6 +140,22 @@ while (true)
         cancelTokenSourceBombTimer.Cancel();
         bombTimer = null;
     }
+
+    if(renderer.enableEsp)
+    {
+        if(ESP == null || ESP.Status != TaskStatus.Running)
+        {
+            cancelTokenSourceESP = new CancellationTokenSource();
+            tokenESP = cancelTokenSourceESP.Token;
+            ESP = new Task(() => Functions.ESP(swed, client, entityList, localPlayerPawn, listentry, renderer, tokenESP));
+            ESP.Start();
+        }
+    }
+    else if(ESP != null && ESP.Status == TaskStatus.Running && !renderer.enableEsp)
+    {
+        cancelTokenSourceESP.Cancel();
+        ESP = null;
+    } 
 
     Thread.Sleep(10); // Небольшая задержка, чтобы не нагружать процессор
 }

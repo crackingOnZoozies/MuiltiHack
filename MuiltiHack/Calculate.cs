@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Swed64;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -50,6 +51,38 @@ namespace MuiltiHack
                 Console.WriteLine("errror");
                 return new Vector2(-99, -99);
             }
+        }
+
+        //skeleton
+        public static List<Vector3> ReadBones(IntPtr boneAddress, Swed swed)
+        {
+            byte[] boneBytes = swed.ReadBytes(boneAddress, 27 * 32 + 16); // get max, 27 = id, 32 = step
+
+            List<Vector3> bones = new List<Vector3>();
+
+            foreach (var boneId in Enum.GetValues(typeof(BonesIds))) // loop throuh enums
+            {
+                float x = BitConverter.ToSingle(boneBytes, (int)boneId * 32 + 0);
+                float y = BitConverter.ToSingle(boneBytes, (int)boneId * 32 + 4); //float = 4 bytes
+                float z = BitConverter.ToSingle(boneBytes, (int)boneId * 32 + 8);
+
+                Vector3 currentBone = new Vector3(x, y, z);
+                bones.Add(currentBone);
+            }
+            return bones;
+        }
+
+        public static List<Vector2> ReadBones2d(List<Vector3> bones, float[] viewMatrix, Vector2 screenSize)
+        {
+            List<Vector2> bones2d = new List<Vector2>();
+
+            foreach (Vector3 bone in bones)
+            {
+                Vector2 bone2d = Calculate.WordToScreen(viewMatrix, bone, screenSize);
+
+                bones2d.Add(bone2d);
+            }
+            return bones2d;
         }
     }
 }
