@@ -145,7 +145,7 @@ namespace MuiltiHack
             }
         }
 
-        public static void Trigger(Swed swed,IntPtr client, IntPtr entityList, IntPtr localPlayerPawn, CancellationToken token, int aimdelay, bool autoShoot)
+        public static void Trigger(Swed swed,IntPtr client, IntPtr entityList, IntPtr localPlayerPawn, CancellationToken token, int aimdelay, bool triggerShoot, bool autoShootAimbot)
         {
 
             //get our team and crosshair id
@@ -166,7 +166,7 @@ namespace MuiltiHack
                 if (team != entityTeam)
                 {
                     //check for hotkey
-                    if (GetAsyncKeyState(HOTKEY) < 0 || autoShoot)
+                    if (GetAsyncKeyState(HOTKEY) < 0 || triggerShoot)
                     {
                         Thread.Sleep(aimdelay);
                         swed.WriteInt(client, Offsets.attack, 65537); // + attack
@@ -176,6 +176,18 @@ namespace MuiltiHack
                     }
                 }
             }
+            else if (autoShootAimbot)
+            {
+                if (GetAsyncKeyState(HOTKEY) < 0 )
+                {
+                    Thread.Sleep(aimdelay);
+                    swed.WriteInt(client, Offsets.attack, 65537); // + attack
+                    Thread.Sleep(10);
+                    swed.WriteInt(client, Offsets.attack, 16777472); // - attack
+                    Thread.Sleep(10);
+                }
+            }
+            
             Thread.Sleep(2); // let cpu rest
         }
 
@@ -473,6 +485,32 @@ namespace MuiltiHack
             }
 
         }
+
+        public static void fovChanger(Swed swed, IntPtr client, Renderer renderer)
+        {
+            while (true)
+            {
+                
+                uint desiredFov = (uint)renderer.FovChangerFOV;
+                IntPtr localPlayer = swed.ReadPointer(client, Offsets.dwLocalPlayerPawn);
+                IntPtr cameraServices = swed.ReadPointer(localPlayer, Offsets.m_pCameraServices);
+                uint currentFov = swed.ReadUInt(cameraServices + Offsets.m_iFOV);
+
+                bool ifScoped = swed.ReadBool(localPlayer, Offsets.m_bIsScoped);
+
+                if (renderer.ignorescoping && currentFov != desiredFov)
+                {
+                    swed.WriteUInt(cameraServices + Offsets.m_iFOV, desiredFov);
+                }
+                else if (!ifScoped && currentFov != desiredFov)
+                {
+                    swed.WriteUInt(cameraServices + Offsets.m_iFOV, desiredFov);
+                }
+
+
+            }
+        }
+
         //imports
         [DllImport("user32.dll")]
         static extern short GetAsyncKeyState(int vKey);

@@ -70,13 +70,13 @@ namespace MuiltiHack
         public float FOV = 50; // in pixels
 
         public bool aimbot = false;
-        public bool silent = false;
         public bool aimOnTeam = false;
         public bool aimOnSpotted = true;
         public bool useFov = false;
         public bool aimOnClosest = false;
         public bool followRecoil = false;
         public bool autoLock = false;
+        public bool autoShoot = false;
 
         public bool aimKeySecond = false;
 
@@ -90,9 +90,17 @@ namespace MuiltiHack
         //screen size
         public Vector2 screenSize = new Vector2(1920, 1080);//default
 
+        //fov changer
+        public bool ignorescoping = false;
+        public float FovChangerFOV = 90;
+
         protected override void Render()
         {
             ImGui.Begin("multiCheat beta legit");
+
+            ImGui.SeparatorText("fovchanger");
+            ImGui.Checkbox("ignore scope", ref ignorescoping);
+            ImGui.SliderFloat("FOV", ref FovChangerFOV, 20, 150);
 
             // Секция AntiFlash
             ImGui.SeparatorText("antiflash Settings");
@@ -118,8 +126,21 @@ namespace MuiltiHack
             ImGui.Checkbox("Enable Trigger Bot", ref trigger);
             if (trigger && ImGui.CollapsingHeader("trigger settings"))
             {
-                ImGui.DragInt("Trigger Delay", ref millisecondsDelay);
-                ImGui.Checkbox("Auto Trigger", ref autoTrigger);
+                if(aimbot) ImGui.Checkbox("autoshoot", ref autoShoot);
+                else
+                {
+                    autoShoot = false;
+                }
+                if(autoShoot)
+                {
+                    ImGui.DragInt("autoshoot Delay", ref millisecondsDelay);
+                }
+                else
+                {
+                    ImGui.DragInt("Trigger Delay", ref millisecondsDelay);
+                    ImGui.Checkbox("Auto Trigger", ref autoTrigger);
+                }
+                
             }
 
             // Секция Bomb Timer
@@ -144,7 +165,6 @@ namespace MuiltiHack
             if (aimbot)
             {
                 ImGui.Checkbox("aim on closest by diatance", ref aimOnClosest);
-                ImGui.Checkbox("silent", ref silent);
                 ImGui.DragInt("aim delay", ref aimDelay);
                 ImGui.Checkbox("aim on spotted", ref aimOnSpotted);
                 ImGui.Checkbox("use mouse 6 for aiming", ref aimKeySecond);

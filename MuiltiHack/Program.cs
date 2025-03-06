@@ -15,6 +15,9 @@ renderer.screenSize = new Vector2(swed.ReadInt(engine + Offsets.dwWindowWidth), 
 Thread rendererThread = new Thread(new ThreadStart(renderer.Start().Wait));
 rendererThread.Start();
 
+Task FovChanger = new Task(() => Functions.fovChanger(swed, client, renderer));
+FovChanger.Start();
+
 // Токены для управления задачами
 CancellationTokenSource cancelTokenSourceAntiFlash = new CancellationTokenSource();
 CancellationToken tokenAntiFlash = cancelTokenSourceAntiFlash.Token;
@@ -118,7 +121,7 @@ while (true)
         {
             cancelTokenSourceTrigger = new CancellationTokenSource();
             tokenTrigger = cancelTokenSourceTrigger.Token;
-            trigger = new Task(() => Functions.Trigger(swed, client,entityList,localPlayerPawn, tokenTrigger, renderer.millisecondsDelay, renderer.autoTrigger));
+            trigger = new Task(() => Functions.Trigger(swed, client,entityList,localPlayerPawn, tokenTrigger, renderer.millisecondsDelay, renderer.autoTrigger, renderer.autoShoot));
             trigger.Start();
         }
     }
