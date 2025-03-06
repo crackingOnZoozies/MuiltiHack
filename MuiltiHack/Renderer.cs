@@ -41,7 +41,7 @@ namespace MuiltiHack
         public bool enableCustomSoundBombTimer = false;
 
         //esp
-        private float yOffset = 0; // before was 20
+        private float yOffset = 20; // odfset between text
         public Vector2 screenSize = new Vector2(1920, 1080);//defaultlt
 
         //enteties copy
@@ -125,7 +125,7 @@ namespace MuiltiHack
 
             if (enableEsp)
             {
-                ImGui.Checkbox("weapon esp", ref weaponEsp);
+                
                 ImGui.Checkbox("box", ref box);
                 ImGui.Checkbox("draw line", ref drawLine);
 
@@ -138,6 +138,11 @@ namespace MuiltiHack
 
                 ImGui.Checkbox("enable visibility check", ref enableVisibilityCheck);
                 ImGui.Checkbox("enable name", ref enableName);
+                if(enableName)
+                {
+                    ImGui.SliderFloat("text y offset of name", ref yOffset, -100, 100);
+                    ImGui.Checkbox("weapon esp", ref weaponEsp);
+                }
 
                 //team color
                 if (ImGui.CollapsingHeader("team color"))
@@ -222,6 +227,7 @@ namespace MuiltiHack
             ImGui.End();
         }
 
+        // ///////////////////////// esp
         //check position
         bool EntityOnSceen(Entity entity)
         {
@@ -339,7 +345,7 @@ namespace MuiltiHack
                 Vector2 textLocation2 = new Vector2(entity.viewPosition2D.X, entity.position2d.Y);
 
                 // Отрисовываем текст (оружие)
-                drawList.AddText(textLocation2, ImGui.ColorConvertFloat4ToU32(nameColor), $"GUN : {entity.currentWeaponName}");
+                drawList.AddText(textLocation2, ImGui.ColorConvertFloat4ToU32(nameColor), $"{entity.currentWeaponName}");
             }
 
             // Возвращаем размер текста к значению по умолчанию
