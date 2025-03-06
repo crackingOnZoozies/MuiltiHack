@@ -85,7 +85,7 @@ namespace MuiltiHack
             // Секция Bhop
             ImGui.SeparatorText("bhop Settings");
             ImGui.Checkbox("Enable Bhop", ref bhop);
-            if (bhop)
+            if (bhop && ImGui.CollapsingHeader("bhop settings"))
             {
                 ImGui.DragInt("Bhop Cooldown", ref cooldown);
                 ImGui.Checkbox("Auto Bhop", ref autoBhop);
@@ -96,7 +96,7 @@ namespace MuiltiHack
             ImGui.SeparatorText("triggerbot Settings");
 
             ImGui.Checkbox("Enable Trigger Bot", ref trigger);
-            if (trigger)
+            if (trigger && ImGui.CollapsingHeader("trigger settings"))
             {
                 ImGui.DragInt("Trigger Delay", ref millisecondsDelay);
                 ImGui.Checkbox("Auto Trigger", ref autoTrigger);
@@ -125,49 +125,52 @@ namespace MuiltiHack
 
             if (enableEsp)
             {
-                
-                ImGui.Checkbox("box", ref box);
-                ImGui.Checkbox("draw line", ref drawLine);
-
-                ImGui.Checkbox("bones", ref enableBones);
-                if (ImGui.CollapsingHeader("bone color"))
+                if(ImGui.CollapsingHeader("ESP settings"))
                 {
-                    ImGui.ColorPicker4("##Bone color", ref BoneColor);
+                    ImGui.Checkbox("box", ref box);
+                    ImGui.Checkbox("draw line", ref drawLine);
+
+                    ImGui.Checkbox("bones", ref enableBones);
+                    if (ImGui.CollapsingHeader("bone color"))
+                    {
+                        ImGui.ColorPicker4("##Bone color", ref BoneColor);
+
+                    }
+
+                    ImGui.Checkbox("enable visibility check", ref enableVisibilityCheck);
+                    ImGui.Checkbox("enable name", ref enableName);
+                    if (enableName)
+                    {
+                        ImGui.SliderFloat("text y offset of name", ref yOffset, -100, 100);
+                        ImGui.Checkbox("weapon esp", ref weaponEsp);
+                    }
+
+                    //team color
+                    if (ImGui.CollapsingHeader("team color"))
+                    {
+                        ImGui.ColorPicker4("##teamcolor", ref teamColor);
+                    }
+
+                    // enemy color
+                    if (ImGui.CollapsingHeader("enemy color"))
+                    {
+                        ImGui.ColorPicker4("##enemycolor", ref enemyColor);
+                    }
+
+                    //hp bar color
+                    if (ImGui.CollapsingHeader("hp bar color"))
+                    {
+                        ImGui.ColorPicker4("##barColor", ref barColor);
+                    }
+
+                    //name color
+                    if (ImGui.CollapsingHeader("name color") && enableName)
+                    {
+                        ImGui.ColorPicker4("##namecolor", ref nameColor);
+                    }
+
 
                 }
-
-                ImGui.Checkbox("enable visibility check", ref enableVisibilityCheck);
-                ImGui.Checkbox("enable name", ref enableName);
-                if(enableName)
-                {
-                    ImGui.SliderFloat("text y offset of name", ref yOffset, -100, 100);
-                    ImGui.Checkbox("weapon esp", ref weaponEsp);
-                }
-
-                //team color
-                if (ImGui.CollapsingHeader("team color"))
-                {
-                    ImGui.ColorPicker4("##teamcolor", ref teamColor);
-                }
-
-                // enemy color
-                if (ImGui.CollapsingHeader("enemy color"))
-                {
-                    ImGui.ColorPicker4("##enemycolor", ref enemyColor);
-                }
-
-                //hp bar color
-                if (ImGui.CollapsingHeader("hp bar color"))
-                {
-                    ImGui.ColorPicker4("##barColor", ref barColor);
-                }
-
-                //name color
-                if (ImGui.CollapsingHeader("name color") && enableName)
-                {
-                    ImGui.ColorPicker4("##namecolor", ref nameColor);
-                }
-
 
                 // draw esp overlay
                 DrawOverlay(screenSize);
@@ -247,6 +250,7 @@ namespace MuiltiHack
 
             //calc box dimensions
             Vector2 rectTop = new Vector2(entity.viewPosition2D.X - entityHeight / 4, entity.viewPosition2D.Y);
+
             Vector2 rectBottom = new Vector2(entity.viewPosition2D.X + entityHeight / 4, entity.viewPosition2D.Y + entityHeight);
 
             Vector4 boxColor = localPlayer.team == entity.team ? teamColor : enemyColor;
