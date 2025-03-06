@@ -30,7 +30,7 @@ namespace MuiltiHack
         const uint crouch = 65537;
         const uint stopCrouch = 16777472;
 
-        public static void AntiFlash(Swed swed, IntPtr client, CancellationToken token)
+        public static void AntiFlash(Swed swed, IntPtr localPlayerPawn, CancellationToken token)
         {
             while (true)
             {
@@ -41,8 +41,6 @@ namespace MuiltiHack
                     continue;
                 }
 
-                //current data
-                IntPtr localPlayerPawn = swed.ReadPointer(client, Offsets.dwLocalPlayerPawn);
                 float flashDuration = swed.ReadFloat(localPlayerPawn, Offsets.m_flFlashBangTime); // 0->1
                 if (flashDuration > 0)
                 {
@@ -53,12 +51,12 @@ namespace MuiltiHack
             }
         }
 
-        public static void Bhop(Swed swed, IntPtr client, CancellationToken token, Renderer renderer)
+        public static void Bhop(Swed swed, IntPtr client, IntPtr playerPawn, CancellationToken token, Renderer renderer)
         {
             IntPtr forcejumpAddress = client + Offsets.jump;
             IntPtr crouchAddy = client + Offsets.duck;
 
-            IntPtr playerPawn = swed.ReadPointer(client, Offsets.dwLocalPlayerPawn);
+            
 
             while (true)
             {
@@ -103,7 +101,7 @@ namespace MuiltiHack
             }
         }
 
-        public static void Radar(Swed swed, IntPtr client, CancellationToken token)
+        public static void Radar(Swed swed, IntPtr entityList, IntPtr listentry, CancellationToken token)
         {
             while (true)
             {
@@ -114,9 +112,6 @@ namespace MuiltiHack
                     continue;
                 }
 
-                IntPtr entityList = swed.ReadPointer(client, Offsets.dwEntityList);
-
-                IntPtr listentry = swed.ReadPointer(entityList, 0x10);
 
                 for (int i = 0; i < 64; i++)
                 {
@@ -149,11 +144,8 @@ namespace MuiltiHack
             }
         }
 
-        public static void Trigger(Swed swed, IntPtr client, CancellationToken token, int aimdelay, bool autoShoot)
+        public static void Trigger(Swed swed,IntPtr client, IntPtr entityList, IntPtr localPlayerPawn, CancellationToken token, int aimdelay, bool autoShoot)
         {
-            IntPtr entityList = swed.ReadPointer(client, Offsets.dwEntityList);
-
-            IntPtr localPlayerPawn = swed.ReadPointer(client, Offsets.dwLocalPlayerPawn);
 
             //get our team and crosshair id
             int team = swed.ReadInt(localPlayerPawn, Offsets.m_iTeamNum);
@@ -186,10 +178,10 @@ namespace MuiltiHack
             Thread.Sleep(2); // let cpu rest
         }
 
-        public static void BombTimer(Swed swed, IntPtr client, CancellationToken token, Renderer renderer)
+        public static void BombTimer(Swed swed, IntPtr GameRules, CancellationToken token, Renderer renderer)
         {
             bool bBombPlanted = false;
-            IntPtr GameRules = swed.ReadPointer(client, Offsets.dwGameRules);
+            
             if (GameRules != IntPtr.Zero)
             {
                 bBombPlanted = swed.ReadBool(GameRules, Offsets.m_bBombPlanted);

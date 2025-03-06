@@ -40,6 +40,14 @@ Task bombTimer = null;
 
 while (true)
 {
+    IntPtr localPlayerPawn = swed.ReadPointer(client, Offsets.dwLocalPlayerPawn);
+
+    IntPtr entityList = swed.ReadPointer(client, Offsets.dwEntityList);
+
+    IntPtr listentry = swed.ReadPointer(entityList, 0x10);
+
+    IntPtr GameRules = swed.ReadPointer(client, Offsets.dwGameRules);
+
     // Управление AntiFlash
     if (renderer.antiflash)
     {
@@ -47,7 +55,7 @@ while (true)
         {
             cancelTokenSourceAntiFlash = new CancellationTokenSource();
             tokenAntiFlash = cancelTokenSourceAntiFlash.Token;
-            antiFlash = new Task(() => Functions.AntiFlash(swed, client, tokenAntiFlash));
+            antiFlash = new Task(() => Functions.AntiFlash(swed, localPlayerPawn, tokenAntiFlash));
             antiFlash.Start();
         }
     }
@@ -64,7 +72,7 @@ while (true)
         {
             cancelTokenSourceBhop = new CancellationTokenSource();
             tokenBhop = cancelTokenSourceBhop.Token;
-            bhop = new Task(() => Functions.Bhop(swed, client, tokenBhop, renderer));
+            bhop = new Task(() => Functions.Bhop(swed, client, localPlayerPawn, tokenBhop, renderer));
             bhop.Start();
         }
     }
@@ -81,7 +89,7 @@ while (true)
         {
             cancelTokenSourceRadar = new CancellationTokenSource();
             tokenRadar = cancelTokenSourceRadar.Token;
-            radar = new Task(() => Functions.Radar(swed, client, tokenRadar));
+            radar = new Task(() => Functions.Radar(swed, entityList, listentry, tokenRadar));
             radar.Start();
         }
     }
@@ -98,7 +106,7 @@ while (true)
         {
             cancelTokenSourceTrigger = new CancellationTokenSource();
             tokenTrigger = cancelTokenSourceTrigger.Token;
-            trigger = new Task(() => Functions.Trigger(swed, client, tokenTrigger, renderer.millisecondsDelay, renderer.autoTrigger));
+            trigger = new Task(() => Functions.Trigger(swed, client,entityList,localPlayerPawn, tokenTrigger, renderer.millisecondsDelay, renderer.autoTrigger));
             trigger.Start();
         }
     }
@@ -115,7 +123,7 @@ while (true)
         {
             cancelTokenSourceBombTimer = new CancellationTokenSource();
             tokenBombTimer = cancelTokenSourceBombTimer.Token;
-            bombTimer = new Task(() => Functions.BombTimer(swed, client, tokenBombTimer, renderer));
+            bombTimer = new Task(() => Functions.BombTimer(swed, GameRules, tokenBombTimer, renderer));
             bombTimer.Start();
         }
     }
