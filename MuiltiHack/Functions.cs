@@ -57,8 +57,6 @@ namespace MuiltiHack
             IntPtr forcejumpAddress = client + Offsets.jump;
             IntPtr crouchAddy = client + Offsets.duck;
 
-            
-
             while (true)
             {
                 // Проверяем, не была ли запрошена отмена задачи
@@ -508,6 +506,54 @@ namespace MuiltiHack
                 }
 
 
+            }
+        }
+
+        public static void RCS(Swed swed, IntPtr client)
+        {
+            Vector3 oldPunch = new Vector3(0, 0, 0);
+            while (true)
+            {
+
+                Thread.Sleep(1);
+
+
+                IntPtr localPlyer = swed.ReadPointer(client, Offsets.dwLocalPlayerPawn);
+
+                int shotsFired = swed.ReadInt(localPlyer, Offsets.m_iShotsFired);
+
+
+                if (shotsFired != 0)
+                {
+
+                    float y = swed.ReadFloat(client + Offsets.dwViewAngles);
+                    float x = swed.ReadFloat(client + Offsets.dwViewAngles + 0x4);
+                    Vector3 aimPunch = swed.ReadVec(localPlyer, Offsets.m_aimPunchAngle);
+
+                    Vector3 NewViewAngles = new Vector3(
+
+                        y + oldPunch.X - aimPunch.X * 2f,
+                        x + oldPunch.Y - aimPunch.Y * 2f,
+                        0
+                        );
+                    if (NewViewAngles.X < -89) NewViewAngles.X = -89;
+                    if (NewViewAngles.X > 89) NewViewAngles.X = 89;
+
+                    if (NewViewAngles.Y < -179)
+                        NewViewAngles.Y = 179 + (NewViewAngles.Y + 179);
+                    if (NewViewAngles.Y > 179)
+                        NewViewAngles.Y = -179 - (NewViewAngles.Y - 179);
+
+                    swed.WriteVec(client, Offsets.dwViewAngles, NewViewAngles);
+                    oldPunch.X = aimPunch.X * 2f;
+                    oldPunch.Y = aimPunch.Y * 2f;
+                    Console.WriteLine($"y:{y}, x :{x}");
+                }
+                else
+                {
+                    oldPunch.X = oldPunch.Y = oldPunch.Z = 0.0f;
+
+                }
             }
         }
 

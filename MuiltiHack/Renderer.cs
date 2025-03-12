@@ -94,6 +94,9 @@ namespace MuiltiHack
         public bool ignorescoping = false;
         public float FovChangerFOV = 90;
 
+        //rcs
+        public bool recoitTrace = false;
+
         protected override void Render()
         {
             ImGui.Begin("multiCheat beta legit");
@@ -142,6 +145,10 @@ namespace MuiltiHack
                 }
                 
             }
+
+            //rcs
+            ImGui.SeparatorText("recoil conatrol");
+            ImGui.Checkbox("rcs switch", ref recoitTrace);
 
             // Секция Bomb Timer
             ImGui.SeparatorText("Bomb Timer Settings");
@@ -236,10 +243,12 @@ namespace MuiltiHack
 
                 }
 
+
+            }
+            if (enableEsp || aimbot)
+            {
                 // draw esp overlay
                 DrawOverlay(screenSize);
-                
-
             }
 
             drawList = ImGui.GetWindowDrawList();

@@ -43,6 +43,9 @@ CancellationToken tokenESP = cancelTokenSourceESP.Token;
 CancellationTokenSource cancelTokenSourceAimBot = new CancellationTokenSource();
 CancellationToken tokenAimBot = cancelTokenSourceAimBot.Token;
 
+CancellationTokenSource cancelTokenSourceRCS = new CancellationTokenSource();
+CancellationToken tokenRCS = cancelTokenSourceRCS.Token;
+
 // Инициализация задач
 Task antiFlash = null;
 Task bhop = null;
@@ -50,7 +53,7 @@ Task radar = null;
 Task trigger = null;
 Task ESP = null;
 Task AimBot = null;
-
+Task RCS = null;    
 Task bombTimer = null;
 
 while (true)
@@ -179,6 +182,23 @@ while (true)
         cancelTokenSourceAimBot?.Cancel();
         AimBot = null;
     }
+
+    if(renderer.recoitTrace)
+    {
+        if(RCS==null || RCS.Status!= TaskStatus.Running)
+        {
+            cancelTokenSourceRCS = new CancellationTokenSource();
+            tokenRCS = cancelTokenSourceRCS.Token;
+            RCS = new Task(() => Functions.RCS(swed, client));
+            RCS.Start();
+        }
+    }
+    else if (RCS!=null && RCS.Status==TaskStatus.Running && !renderer.recoitTrace)
+    {
+        cancelTokenSourceRCS?.Cancel();
+        RCS = null;
+    } 
+
 
     Thread.Sleep(10); // Небольшая задержка, чтобы не нагружать процессор
 }
