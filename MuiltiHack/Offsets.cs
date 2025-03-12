@@ -8,6 +8,7 @@ namespace MuiltiHack
 {
     public static class Offsets
     {
+
         //buttons.cs
         public static int attack = 0x1884730;
         public static int jump = 0x1884C40;
