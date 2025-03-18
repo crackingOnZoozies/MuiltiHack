@@ -484,7 +484,7 @@ namespace MuiltiHack
 
         }
 
-        public static void fovChanger(Swed swed, IntPtr client, Renderer renderer)
+        public static void fovChanger(Swed swed, IntPtr client, Renderer renderer, CancellationToken token)
         {
             while (true)
             {
@@ -509,11 +509,17 @@ namespace MuiltiHack
             }
         }
 
-        public static void RCS(Swed swed, IntPtr client)
+        public static void RCS(Swed swed, IntPtr client, CancellationToken token)
         {
             Vector3 oldPunch = new Vector3(0, 0, 0);
             while (true)
             {
+                // Проверяем, не была ли запрошена отмена задачи
+                if (token.IsCancellationRequested)
+                {
+                    Thread.Sleep(10);
+                    continue;
+                }
 
                 Thread.Sleep(1);
 
@@ -554,6 +560,45 @@ namespace MuiltiHack
                     oldPunch.X = oldPunch.Y = oldPunch.Z = 0.0f;
 
                 }
+            }
+        }
+
+        public static void AutoPistolShoting(Swed swed, IntPtr client, CancellationToken token)
+        {
+            int[] ints = {1,2,3,4,30,32,36,60,63,64,2000 };
+            while (true)
+            {
+
+                // Проверяем, не была ли запрошена отмена задачи
+                if (token.IsCancellationRequested)
+                {
+                    Thread.Sleep(10);
+                    continue;
+                }
+
+                Thread.Sleep(1);
+
+                IntPtr localPlyer = swed.ReadPointer(client, Offsets.dwLocalPlayerPawn);
+
+                IntPtr currentWeapon = swed.ReadPointer(localPlyer, Offsets.m_pClippingWeapon);
+                // get item defenition index
+                short weponDefenitionIndex = swed.ReadShort(currentWeapon, Offsets.m_AttributeManager + Offsets.m_Item + Offsets.m_iItemDefinitionIndex);
+                foreach (var item in ints)
+                {
+                    if (item == weponDefenitionIndex && GetAsyncKeyState(0x01) < 0)
+                    {
+                        swed.WriteInt(client, Offsets.attack, 65537); // + attack
+                        Thread.Sleep(10);
+                        swed.WriteInt(client, Offsets.attack, 16777472); // - attack
+                        Thread.Sleep(10);
+                        break;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+
             }
         }
 

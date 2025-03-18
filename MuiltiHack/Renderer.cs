@@ -91,19 +91,34 @@ namespace MuiltiHack
         public Vector2 screenSize = new Vector2(1920, 1080);//default
 
         //fov changer
+        public bool enableFovChanger = false;
         public bool ignorescoping = false;
         public float FovChangerFOV = 90;
 
         //rcs
         public bool recoitTrace = false;
 
+        //autopistol
+        public bool autoPistol = false;
+
         protected override void Render()
         {
             ImGui.Begin("multiCheat beta legit");
 
             ImGui.SeparatorText("fovchanger");
-            ImGui.Checkbox("ignore scope", ref ignorescoping);
-            ImGui.SliderFloat("FOV", ref FovChangerFOV, 20, 150);
+            ImGui.Checkbox("FOV changer", ref enableFovChanger);
+            if(enableFovChanger)
+            {
+                ImGui.Checkbox("ignore scope", ref ignorescoping);
+                ImGui.SliderFloat("FOV", ref FovChangerFOV, 0, 150);
+            }
+            if(!enableFovChanger && FovChangerFOV != 0)
+            {
+                FovChangerFOV = 0;
+            }
+
+            ImGui.SeparatorText("auto pistol");
+            ImGui.Checkbox("auto pistol switch", ref autoPistol);
 
             // Секция AntiFlash
             ImGui.SeparatorText("antiflash Settings");

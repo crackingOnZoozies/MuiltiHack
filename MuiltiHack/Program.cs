@@ -15,10 +15,12 @@ renderer.screenSize = new Vector2(swed.ReadInt(engine + Offsets.dwWindowWidth), 
 Thread rendererThread = new Thread(new ThreadStart(renderer.Start().Wait));
 rendererThread.Start();
 
-Task FovChanger = new Task(() => Functions.fovChanger(swed, client, renderer));
-FovChanger.Start();
+//Task FovChanger = new Task(() => Functions.fovChanger(swed, client, renderer));
+//FovChanger.Start();
 
 // Токены для управления задачами
+
+
 CancellationTokenSource cancelTokenSourceAntiFlash = new CancellationTokenSource();
 CancellationToken tokenAntiFlash = cancelTokenSourceAntiFlash.Token;
 
@@ -31,8 +33,6 @@ CancellationToken tokenRadar = cancelTokenSourceRadar.Token;
 CancellationTokenSource cancelTokenSourceTrigger = new CancellationTokenSource();
 CancellationToken tokenTrigger = cancelTokenSourceRadar.Token;
 
-CancellationTokenSource cancelTokenSourceFov = new CancellationTokenSource();
-CancellationToken tokenFov = cancelTokenSourceRadar.Token;
 
 CancellationTokenSource cancelTokenSourceBombTimer = new CancellationTokenSource();
 CancellationToken tokenBombTimer = cancelTokenSourceBombTimer.Token;
@@ -46,6 +46,12 @@ CancellationToken tokenAimBot = cancelTokenSourceAimBot.Token;
 CancellationTokenSource cancelTokenSourceRCS = new CancellationTokenSource();
 CancellationToken tokenRCS = cancelTokenSourceRCS.Token;
 
+CancellationTokenSource cancelTokenSourceFOV = new CancellationTokenSource();
+CancellationToken tokenFOV = cancelTokenSourceFOV.Token;
+
+CancellationTokenSource cancelTokenSourceAutoPistol = new CancellationTokenSource();
+CancellationToken tokenAutoPistol = cancelTokenSourceAutoPistol.Token;
+
 // Инициализация задач
 Task antiFlash = null;
 Task bhop = null;
@@ -55,6 +61,8 @@ Task ESP = null;
 Task AimBot = null;
 Task RCS = null;    
 Task bombTimer = null;
+Task FOV = null;
+Task autoPistol = null;
 
 while (true)
 {
@@ -189,7 +197,7 @@ while (true)
         {
             cancelTokenSourceRCS = new CancellationTokenSource();
             tokenRCS = cancelTokenSourceRCS.Token;
-            RCS = new Task(() => Functions.RCS(swed, client));
+            RCS = new Task(() => Functions.RCS(swed, client,tokenRCS));
             RCS.Start();
         }
     }
@@ -197,7 +205,39 @@ while (true)
     {
         cancelTokenSourceRCS?.Cancel();
         RCS = null;
-    } 
+    }
+
+    if (renderer.enableFovChanger)
+    {
+        if(FOV==null || FOV.Status != TaskStatus.Running)
+        {
+            cancelTokenSourceFOV = new CancellationTokenSource();
+            tokenFOV = cancelTokenSourceFOV.Token;
+            FOV = new Task(() => Functions.fovChanger(swed, client, renderer,tokenFOV));
+            FOV.Start();
+        }
+    }
+    else if(FOV!=null && FOV.Status == TaskStatus.Running && !renderer.enableFovChanger)
+    {
+        cancelTokenSourceFOV?.Cancel();
+        FOV = null;
+    }
+
+    if (renderer.autoPistol)
+    {
+        if(autoPistol==null || autoPistol.Status != TaskStatus.Running)
+        {
+            cancelTokenSourceAutoPistol = new CancellationTokenSource();
+            tokenAutoPistol = cancelTokenSourceAutoPistol.Token;
+            autoPistol = new Task( ()=>Functions.AutoPistolShoting(swed, client, tokenAutoPistol));
+            autoPistol.Start();
+        }
+    }
+    else if(autoPistol!=null && autoPistol.Status==TaskStatus.Running && !renderer.autoPistol)
+    {
+        cancelTokenSourceAutoPistol?.Cancel();
+        autoPistol = null;
+    }
 
 
     Thread.Sleep(10); // Небольшая задержка, чтобы не нагружать процессор
