@@ -12,6 +12,7 @@ IntPtr engine = swed.GetModuleBase("engine2.dll");
 Renderer renderer = new Renderer();
 renderer.screenSize = new Vector2(swed.ReadInt(engine + Offsets.dwWindowWidth), swed.ReadInt(engine + Offsets.dwWindowHeight));
 
+
 Thread rendererThread = new Thread(new ThreadStart(renderer.Start().Wait));
 rendererThread.Start();
 
