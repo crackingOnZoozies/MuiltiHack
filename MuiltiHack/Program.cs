@@ -133,7 +133,7 @@ while (true)
         {
             cancelTokenSourceTrigger = new CancellationTokenSource();
             tokenTrigger = cancelTokenSourceTrigger.Token;
-            trigger = new Task(() => Functions.Trigger(swed, client,entityList,localPlayerPawn, tokenTrigger, renderer.millisecondsDelay, renderer.autoTrigger, renderer.autoShoot));
+            trigger = new Task(() => Functions.Trigger(swed, client,entityList,localPlayerPawn, tokenTrigger, renderer.millisecondsDelay, renderer.autoTrigger, renderer.autoShoot,renderer.legitTrigger));
             trigger.Start();
         }
     }
@@ -166,7 +166,7 @@ while (true)
         {
             cancelTokenSourceESP = new CancellationTokenSource();
             tokenESP = cancelTokenSourceESP.Token;
-            ESP = new Task(() => Functions.ESP(swed, client, entityList, localPlayerPawn, listentry, renderer, tokenESP));
+            ESP = new Task(() => Functions.ESP(swed, client, entityList, listentry, renderer, tokenESP));
             ESP.Start();
         }
     }
@@ -230,7 +230,7 @@ while (true)
         {
             cancelTokenSourceAutoPistol = new CancellationTokenSource();
             tokenAutoPistol = cancelTokenSourceAutoPistol.Token;
-            autoPistol = new Task( ()=>Functions.AutoPistolShoting(swed, client, tokenAutoPistol));
+            autoPistol = new Task( ()=>Functions.AutoPistolShoting(swed, client, tokenAutoPistol,renderer));
             autoPistol.Start();
         }
     }

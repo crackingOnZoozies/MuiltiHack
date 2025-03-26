@@ -19,6 +19,10 @@ namespace MuiltiHack
         //trigger hotkey
         const int HOTKEY = 0x06; //mouse5 = 0x06 alt = 0x12
 
+        //mouse events consts
+        const uint L_MouseDown = 0x02;
+        const uint L_MouseUp = 0x04;
+
         //player states
         const uint standing = 65665;
         const uint crouching = 65667;
@@ -143,7 +147,7 @@ namespace MuiltiHack
             }
         }
 
-        public static void Trigger(Swed swed,IntPtr client, IntPtr entityList, IntPtr localPlayerPawn, CancellationToken token, int aimdelay, bool triggerShoot, bool autoShootAimbot)
+        public static void Trigger(Swed swed,IntPtr client, IntPtr entityList, IntPtr localPlayerPawn, CancellationToken token, int aimdelay, bool triggerShoot, bool autoShootAimbot, bool legit)
         {
 
             //get our team and crosshair id
@@ -167,10 +171,22 @@ namespace MuiltiHack
                     if (GetAsyncKeyState(HOTKEY) < 0 || triggerShoot)
                     {
                         Thread.Sleep(aimdelay);
-                        swed.WriteInt(client, Offsets.attack, 65537); // + attack
-                        Thread.Sleep(10);
-                        swed.WriteInt(client, Offsets.attack, 16777472); // - attack
-                        Thread.Sleep(10);
+
+                        if (legit)
+                        {
+                            mouse_event(L_MouseDown,0,0,0,IntPtr.Zero);
+                            Thread.Sleep(10);
+                            mouse_event(L_MouseUp,0,0,0,IntPtr.Zero);
+                            Thread.Sleep(10);
+                        }
+                        else
+                        {
+                            swed.WriteInt(client, Offsets.attack, 65537); // + attack
+                            Thread.Sleep(10);
+                            swed.WriteInt(client, Offsets.attack, 16777472); // - attack
+                            Thread.Sleep(10);
+                        }
+                        
                     }
                 }
             }
@@ -179,6 +195,11 @@ namespace MuiltiHack
                 if (GetAsyncKeyState(HOTKEY) < 0 )
                 {
                     Thread.Sleep(aimdelay);
+                    if (legit)
+                    {
+                        mouse_event(L_MouseDown, 0, 0, 0, IntPtr.Zero);
+                        Thread.Sleep(10);
+                    }
                     swed.WriteInt(client, Offsets.attack, 65537); // + attack
                     Thread.Sleep(10);
                     swed.WriteInt(client, Offsets.attack, 16777472); // - attack
@@ -220,7 +241,7 @@ namespace MuiltiHack
             }
         }
 
-        public static void ESP(Swed swed, IntPtr client,IntPtr entityList, IntPtr localPlayerPawn, IntPtr listEntry, Renderer renderer, CancellationToken token)
+        public static void ESP(Swed swed, IntPtr client,IntPtr entityList, IntPtr listEntry, Renderer renderer, CancellationToken token)
         {
             //get screen size
             Vector2 screenSize = renderer.screenSize;
@@ -237,6 +258,7 @@ namespace MuiltiHack
                     continue;
                 }
 
+                IntPtr localPlayerPawn = swed.ReadPointer(client,Offsets.dwLocalPlayerPawn);
                 entities.Clear();
 
                 //getting our team
@@ -431,6 +453,10 @@ namespace MuiltiHack
                     entities = entities.OrderBy(o => o.distance).ToList();
                     if (entities.Count > 0 && (swedBool))
                     {
+                        if (renderer.autoLockMaxDistance < entities[0].distance && renderer.autoLock)
+                        {
+                            continue;
+                        }
                         float y = swed.ReadFloat(client + Offsets.dwViewAngles);
                         float x = swed.ReadFloat(client + Offsets.dwViewAngles + 0x4);
                         //get view pos
@@ -451,6 +477,10 @@ namespace MuiltiHack
                     entities = entities.OrderBy(o => o.pixelDistance).ToList();
                     if (entities.Count > 0 && (swedBool))
                     {
+                        if (renderer.autoLockMaxDistance < entities[0].distance && renderer.autoLock)
+                        {
+                            continue;
+                        }
                         float y = swed.ReadFloat(client + Offsets.dwViewAngles);
                         float x = swed.ReadFloat(client + Offsets.dwViewAngles + 0x4);
                         //get view pos
@@ -563,7 +593,7 @@ namespace MuiltiHack
             }
         }
 
-        public static void AutoPistolShoting(Swed swed, IntPtr client, CancellationToken token)
+        public static void AutoPistolShoting(Swed swed, IntPtr client, CancellationToken token, Renderer renderer)
         {
             int[] ints = {1,2,3,4,30,32,36,60,63,64,2000 };
             while (true)
@@ -587,10 +617,13 @@ namespace MuiltiHack
                 {
                     if (item == weponDefenitionIndex && GetAsyncKeyState(0x01) < 0)
                     {
+
                         swed.WriteInt(client, Offsets.attack, 65537); // + attack
                         Thread.Sleep(10);
                         swed.WriteInt(client, Offsets.attack, 16777472); // - attack
                         Thread.Sleep(10);
+
+
                         break;
                     }
                     else
@@ -605,6 +638,9 @@ namespace MuiltiHack
         //imports
         [DllImport("user32.dll")]
         static extern short GetAsyncKeyState(int vKey);
+
+        [DllImport("user32.dll")]
+        static extern void mouse_event(uint dwFalags, uint dx, uint dy, uint dwData, IntPtr dwExtraInfo);
     }
 
 }

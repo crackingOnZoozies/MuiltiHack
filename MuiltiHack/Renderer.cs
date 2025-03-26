@@ -13,22 +13,25 @@ namespace MuiltiHack
 {
     public class Renderer : Overlay
     {
-
+        //antiflash
         public bool antiflash = false;
 
+        //radar
         public bool radar = false;
 
+        //bhop
         public bool bhop = false;
         public int cooldown = 0;
         public bool autoBhop = false;
         public bool legit = false;
+
         public bool bombTimer = false;
 
+        //trigger bot
         public bool trigger = false;
+        public bool legitTrigger = true;
         public int millisecondsDelay = 0;
         public bool autoTrigger = false;
-
-        //bomb timer
 
         //rgba
         private Vector4 redColor = new Vector4(1, 0, 0, 1);
@@ -75,7 +78,10 @@ namespace MuiltiHack
         public bool useFov = false;
         public bool aimOnClosest = false;
         public bool followRecoil = false;
+
         public bool autoLock = false;
+        public float autoLockMaxDistance = 0f;
+
         public bool autoShoot = false;
 
         public bool aimKeySecond = false;
@@ -100,6 +106,7 @@ namespace MuiltiHack
 
         //autopistol
         public bool autoPistol = false;
+        //public bool autoPistolLegit = true; bullshit dont work
 
         protected override void Render()
         {
@@ -119,6 +126,7 @@ namespace MuiltiHack
 
             ImGui.SeparatorText("auto pistol");
             ImGui.Checkbox("auto pistol switch", ref autoPistol);
+            
 
             // Секция AntiFlash
             ImGui.SeparatorText("antiflash Settings");
@@ -144,6 +152,7 @@ namespace MuiltiHack
             ImGui.Checkbox("Enable Trigger Bot", ref trigger);
             if (trigger && ImGui.CollapsingHeader("trigger settings"))
             {
+                ImGui.Checkbox("legit trigger", ref legitTrigger);
                 if(aimbot) ImGui.Checkbox("autoshoot", ref autoShoot);
                 else
                 {
@@ -191,6 +200,10 @@ namespace MuiltiHack
                 ImGui.Checkbox("aim on spotted", ref aimOnSpotted);
                 ImGui.Checkbox("use mouse 6 for aiming", ref aimKeySecond);
                 ImGui.Checkbox("autoLock", ref autoLock);
+                if (autoLock)
+                {
+                    ImGui.SliderFloat("max distance for autoLock", ref autoLockMaxDistance, 0, 3000);
+                }
 
                 if (!aimOnClosest) ImGui.Checkbox("fov", ref useFov);
 
