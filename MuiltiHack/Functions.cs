@@ -595,7 +595,7 @@ namespace MuiltiHack
 
         public static void AutoPistolShoting(Swed swed, IntPtr client, CancellationToken token, Renderer renderer)
         {
-            int[] ints = {1,2,3,4,30,32,36,60,63,64,2000 };
+            int[] ints = {1,2,3,4,30,32,36,61,63,64,2000 };
             while (true)
             {
 
