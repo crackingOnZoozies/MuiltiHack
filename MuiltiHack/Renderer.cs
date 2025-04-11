@@ -25,6 +25,7 @@ namespace MuiltiHack
         public bool autoBhop = false;
         public bool legit = false;
 
+
         public bool bombTimer = false;
 
         //trigger bot
@@ -55,12 +56,15 @@ namespace MuiltiHack
         public bool enableEsp = false;
         private bool enableBones = false;
         private bool enableName = false;
-        private bool enableVisibilityCheck = false;
+        public bool enableVisibilityCheck = false;
         private bool weaponEsp = false;
         private bool box = false;
         private bool drawLine = false;
 
         private float boneThickness = 4;
+        public float AutoSpotDist = 1000;
+        public float maxEspDist = 1000;
+
 
         private Vector4 enemyColor = new Vector4(1, 0, 0, 1); // red
         private Vector4 teamColor = new Vector4(0, 1, 0, 1); // green
@@ -78,6 +82,7 @@ namespace MuiltiHack
         public bool useFov = false;
         public bool aimOnClosest = false;
         public bool followRecoil = false;
+        public bool legitAimBot = false;
 
         public bool autoLock = false;
         public float autoLockMaxDistance = 0f;
@@ -195,8 +200,10 @@ namespace MuiltiHack
             ImGui.Checkbox("aimbot in/off", ref aimbot);
             if (aimbot)
             {
+                //ImGui.Checkbox("legit Aim assist", ref legitAimBot);
                 ImGui.Checkbox("aim on closest by diatance", ref aimOnClosest);
                 ImGui.DragInt("aim delay", ref aimDelay);
+                ImGui.Checkbox("team aimbot", ref aimOnTeam);
                 ImGui.Checkbox("aim on spotted", ref aimOnSpotted);
                 ImGui.Checkbox("use mouse 6 for aiming", ref aimKeySecond);
                 ImGui.Checkbox("autoLock", ref autoLock);
@@ -226,6 +233,7 @@ namespace MuiltiHack
             {
                 if(ImGui.CollapsingHeader("ESP settings"))
                 {
+                    ImGui.SliderFloat("max distance for esp renderer", ref maxEspDist, 0, 10000);
                     ImGui.Checkbox("box", ref box);
                     ImGui.Checkbox("draw line", ref drawLine);
 
@@ -237,6 +245,10 @@ namespace MuiltiHack
                     }
 
                     ImGui.Checkbox("enable visibility check", ref enableVisibilityCheck);
+                    if(enableVisibilityCheck)
+                    {
+                        ImGui.SliderFloat("autoSpot distance", ref AutoSpotDist, 0f, 5000f);
+                    }
                     ImGui.Checkbox("enable name", ref enableName);
                     if (enableName)
                     {

@@ -133,7 +133,7 @@ while (true)
         {
             cancelTokenSourceTrigger = new CancellationTokenSource();
             tokenTrigger = cancelTokenSourceTrigger.Token;
-            trigger = new Task(() => Functions.Trigger(swed, client,entityList,localPlayerPawn, tokenTrigger, renderer.millisecondsDelay, renderer.autoTrigger, renderer.autoShoot,renderer.legitTrigger));
+            trigger = new Task(() => Functions.Trigger(swed, client,entityList,localPlayerPawn, tokenTrigger, renderer.millisecondsDelay, renderer.autoTrigger, renderer.autoShoot,renderer.legitTrigger,renderer.aimOnTeam));
             trigger.Start();
         }
     }
