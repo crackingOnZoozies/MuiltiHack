@@ -36,7 +36,7 @@ namespace MuiltiHack
         const uint crouch = 65537;
         const uint stopCrouch = 16777472;
 
-        public static void AntiFlash(Swed swed, IntPtr localPlayerPawn, CancellationToken token)
+        public static void AntiFlash(Swed swed, IntPtr client, CancellationToken token)
         {
             while (true)
             {
@@ -46,6 +46,8 @@ namespace MuiltiHack
                     Thread.Sleep(10);
                     continue;
                 }
+
+                IntPtr localPlayerPawn = swed.ReadPointer(client + Offsets.dwLocalPlayerPawn);
 
                 float flashDuration = swed.ReadFloat(localPlayerPawn, Offsets.m_flFlashBangTime); // 0->1
                 if (flashDuration > 0)
@@ -57,7 +59,7 @@ namespace MuiltiHack
             }
         }
 
-        public static void Bhop(Swed swed, IntPtr client, IntPtr playerPawn, CancellationToken token, Renderer renderer)
+        public static void Bhop(Swed swed, IntPtr client,  CancellationToken token, Renderer renderer)
         {
             IntPtr forcejumpAddress = client + Offsets.jump;
             IntPtr crouchAddy = client + Offsets.duck;
@@ -70,7 +72,7 @@ namespace MuiltiHack
                     Thread.Sleep(10);
                     continue;
                 }
-
+                IntPtr playerPawn = swed.ReadPointer(client, Offsets.dwLocalPlayerPawn);
                 uint fFlag = swed.ReadUInt(playerPawn, Offsets.m_fFlags);
                 if (GetAsyncKeyState(SPACE_BAR) < 0 || renderer.autoBhop)
                 {
@@ -303,6 +305,9 @@ namespace MuiltiHack
                     entity.name = swed.ReadString(currentController, Offsets.m_iszPlayerName, 16).Split("\0")[0];// reading name
 
                     entity.team = swed.ReadInt(currentPawn, Offsets.m_iTeamNum);
+
+                    if(!renderer.showTeam && entity.team == localPlayer.team) continue;
+
                     entity.health = swed.ReadInt(currentPawn, Offsets.m_iHealth);// reading hp
 
                     entity.position = swed.ReadVec(currentPawn, Offsets.m_vOldOrigin);

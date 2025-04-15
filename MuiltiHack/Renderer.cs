@@ -60,10 +60,11 @@ namespace MuiltiHack
         private bool weaponEsp = false;
         private bool box = false;
         private bool drawLine = false;
+        public bool showTeam = false;
 
         private float boneThickness = 4;
         public float AutoSpotDist = 1000;
-        public float maxEspDist = 1000;
+        public float maxEspDist = 10000;
 
 
         private Vector4 enemyColor = new Vector4(1, 0, 0, 1); // red
@@ -233,6 +234,7 @@ namespace MuiltiHack
             {
                 if(ImGui.CollapsingHeader("ESP settings"))
                 {
+                    ImGui.Checkbox("show team", ref showTeam);
                     ImGui.SliderFloat("max distance for esp renderer", ref maxEspDist, 0, 10000);
                     ImGui.Checkbox("box", ref box);
                     ImGui.Checkbox("draw line", ref drawLine);
@@ -257,7 +259,7 @@ namespace MuiltiHack
                     }
 
                     //team color
-                    if (ImGui.CollapsingHeader("team color"))
+                    if (showTeam && ImGui.CollapsingHeader("team color"))
                     {
                         ImGui.ColorPicker4("##teamcolor", ref teamColor);
                     }

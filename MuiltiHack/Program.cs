@@ -82,7 +82,7 @@ while (true)
         {
             cancelTokenSourceAntiFlash = new CancellationTokenSource();
             tokenAntiFlash = cancelTokenSourceAntiFlash.Token;
-            antiFlash = new Task(() => Functions.AntiFlash(swed, localPlayerPawn, tokenAntiFlash));
+            antiFlash = new Task(() => Functions.AntiFlash(swed, client, tokenAntiFlash));
             antiFlash.Start();
         }
     }
@@ -99,7 +99,7 @@ while (true)
         {
             cancelTokenSourceBhop = new CancellationTokenSource();
             tokenBhop = cancelTokenSourceBhop.Token;
-            bhop = new Task(() => Functions.Bhop(swed, client, localPlayerPawn, tokenBhop, renderer));
+            bhop = new Task(() => Functions.Bhop(swed, client,  tokenBhop, renderer));
             bhop.Start();
         }
     }
