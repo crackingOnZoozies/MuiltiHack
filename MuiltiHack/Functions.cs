@@ -20,6 +20,8 @@ namespace MuiltiHack
         //trigger hotkey
         const int HOTKEY = 0x06; //mouse5 = 0x06 alt = 0x12
 
+        const int vKey = 0x12; // mouse 5 12-alt
+
         //mouse events consts
         const uint L_MouseDown = 0x02;
         const uint L_MouseUp = 0x04;
@@ -317,10 +319,8 @@ namespace MuiltiHack
                     entity.viewPosition2D = Calculate.WordToScreen(viewMatrix, Vector3.Add(entity.position, entity.viewOffset), screenSize);
 
                     entity.distance = Vector3.Distance(entity.position, localPlayer.position);
-                    if ((renderer.enableVisibilityCheck && !entity.spotted && entity.distance > renderer.AutoSpotDist) || renderer.maxEspDist < entity.distance)
-                    {
-                        continue;
-                    }
+
+                    if(renderer.enableVisibilityCheck && !entity.spotted) continue;
 
                     entity.bones = Calculate.ReadBones(boneMatrix, swed);
 
@@ -640,6 +640,118 @@ namespace MuiltiHack
             }
         }
 
+        public static void AntiAim(Swed swed, IntPtr client, CancellationToken token, Renderer renderer)
+        {
+            // x and y addies
+            IntPtr yAddress = new IntPtr(Offsets.dwViewAngles);
+            IntPtr xAddress = new IntPtr(Offsets.dwViewAngles + 0x4);
+            Random rnd = new Random();
+
+            float x, y;
+            bool antiAimEnabled = false; // Флаг состояния анти-эйма
+            bool prevKeyState = false;   // Предыдущее состояние клавиши
+
+            while (true)
+            {
+
+                // Проверяем, не была ли запрошена отмена задачи
+                if (token.IsCancellationRequested)
+                {
+                    Thread.Sleep(10);
+                    continue;
+                }
+
+                // Проверка нажатия клавиши
+                bool currentKeyState = GetAsyncKeyState(vKey) < 0;
+
+                // Переключение состояния при клике
+                if (currentKeyState && !prevKeyState)
+                {
+                    antiAimEnabled = !antiAimEnabled;
+                    Console.WriteLine($"Anti-Aim: {antiAimEnabled}");
+                }
+                prevKeyState = currentKeyState;
+
+                x = swed.ReadFloat(client + xAddress);
+                y = swed.ReadFloat(client + yAddress);
+
+                if (antiAimEnabled)
+                {
+                    Console.WriteLine($"original x:{x}, y:{y}");
+
+                    if (renderer.backOnly)
+                    {
+                        if (y != 89)
+                        {
+                            swed.WriteFloat(client + yAddress, 89);
+                        }
+                        swed.WriteFloat(client + xAddress, -x + 30);
+                        swed.WriteFloat(client + xAddress, -x - 15);
+                    }
+                    else if (renderer.jitterMode)
+                    {
+                        float jitterX = rnd.Next(-180, 180);
+                        float jitterY = rnd.Next(-89, 89);
+                        swed.WriteFloat(client + xAddress, jitterX);
+                        swed.WriteFloat(client + yAddress, jitterY);
+                    }
+                    else if (renderer.ultraSpin)
+                    {
+                        swed.WriteFloat(client + xAddress, -x - 5);
+                    }
+                    else
+                    {
+                        swed.WriteFloat(client + xAddress, -x);
+                        swed.WriteFloat(client + yAddress, 89);
+                        swed.WriteFloat(client + xAddress, -x - 15);
+                    }
+
+                    Thread.Sleep(5);
+                }
+
+                // Восстановление оригинальных значений при выключении
+                if (!antiAimEnabled && swed.ReadFloat(client + xAddress) != x)
+                {
+                    swed.WriteFloat(client + xAddress, x);
+                    swed.WriteFloat(client + yAddress, y);
+                }
+
+                Thread.Sleep(10);
+            }
+
+        }
+
+        public static void InfiniteInspect(Swed swed, IntPtr client,CancellationToken token, Renderer renderer)
+        {
+            //& 0x8000
+            // Проверяем, не была ли запрошена отмена задачи
+            const int VK_F = 0x46; // Virtual key code for 'F'
+
+            while (true)
+            {
+                if (token.IsCancellationRequested)
+                {
+                    Thread.Sleep(10);
+                    continue;
+                }
+
+                bool isFPressed = (GetAsyncKeyState(VK_F) ) != 0;
+                bool shouldInspect = renderer.inspect || (renderer.manual || isFPressed);
+
+                if (shouldInspect)
+                {
+                    IntPtr inspectAddy = swed.ReadPointer(client + Offsets.lookatweapon);
+                    swed.WriteInt(inspectAddy, 65537);
+                    Thread.Sleep(2);
+                }
+                else
+                {
+                    Thread.Sleep(10);
+                }
+            }
+        }
+
+
         //fake inputs
         public static void shoot()
         {
@@ -648,8 +760,6 @@ namespace MuiltiHack
             mouse_event(L_MouseUp, 0, 0, 0, UIntPtr.Zero);
             Thread.Sleep(10);
         }
-
-
 
 
         //imports

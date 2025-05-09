@@ -114,9 +114,35 @@ namespace MuiltiHack
         public bool autoPistol = false;
         //public bool autoPistolLegit = true; bullshit dont work
 
+        //anti aim
+        public bool antiAim = false;
+        public bool backOnly = false;
+        public bool ultraSpin = false;
+        public bool jitterMode = false;
+
+        //inf inspect
+        public bool inspect = false;
+        public bool manual = false;
+
         protected override void Render()
         {
             ImGui.Begin("multiCheat beta legit");
+
+            ImGui.SeparatorText("anti aim");
+            ImGui.Checkbox("on anti aim", ref antiAim);
+            if(ImGui.CollapsingHeader("antiAim modes"))
+            {
+                ImGui.Checkbox("simple backwards aimbot", ref backOnly);
+                ImGui.Checkbox("retarded spin", ref ultraSpin);
+                ImGui.Checkbox("jitter", ref jitterMode);
+            }
+
+            ImGui.SeparatorText("inspect shit(dont work)");
+            ImGui.Checkbox("auto inspect", ref inspect);
+            if (inspect)
+            {
+                ImGui.Checkbox("manual", ref manual);
+            }
 
             ImGui.SeparatorText("fovchanger");
             ImGui.Checkbox("FOV changer", ref enableFovChanger);
@@ -235,7 +261,7 @@ namespace MuiltiHack
                 if(ImGui.CollapsingHeader("ESP settings"))
                 {
                     ImGui.Checkbox("show team", ref showTeam);
-                    ImGui.SliderFloat("max distance for esp renderer", ref maxEspDist, 0, 10000);
+                    //ImGui.SliderFloat("max distance for esp renderer", ref maxEspDist, 0, 10000);
                     ImGui.Checkbox("box", ref box);
                     ImGui.Checkbox("draw line", ref drawLine);
 
@@ -246,11 +272,7 @@ namespace MuiltiHack
 
                     }
 
-                    ImGui.Checkbox("enable visibility check", ref enableVisibilityCheck);
-                    if(enableVisibilityCheck)
-                    {
-                        ImGui.SliderFloat("autoSpot distance", ref AutoSpotDist, 0f, 5000f);
-                    }
+                    ImGui.Checkbox("show only spotted", ref enableVisibilityCheck);
                     ImGui.Checkbox("enable name", ref enableName);
                     if (enableName)
                     {

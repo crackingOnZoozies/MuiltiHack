@@ -34,7 +34,6 @@ CancellationToken tokenRadar = cancelTokenSourceRadar.Token;
 CancellationTokenSource cancelTokenSourceTrigger = new CancellationTokenSource();
 CancellationToken tokenTrigger = cancelTokenSourceRadar.Token;
 
-
 CancellationTokenSource cancelTokenSourceBombTimer = new CancellationTokenSource();
 CancellationToken tokenBombTimer = cancelTokenSourceBombTimer.Token;
 
@@ -53,6 +52,12 @@ CancellationToken tokenFOV = cancelTokenSourceFOV.Token;
 CancellationTokenSource cancelTokenSourceAutoPistol = new CancellationTokenSource();
 CancellationToken tokenAutoPistol = cancelTokenSourceAutoPistol.Token;
 
+CancellationTokenSource cancelTokenSourceAntiAim = new CancellationTokenSource();
+CancellationToken tokenAntiAim = cancelTokenSourceAntiAim.Token;
+
+CancellationTokenSource cancelTokenSourceInspect = new CancellationTokenSource();
+CancellationToken tokenInspect = cancelTokenSourceInspect.Token;
+
 // Инициализация задач
 Task antiFlash = null;
 Task bhop = null;
@@ -64,6 +69,8 @@ Task RCS = null;
 Task bombTimer = null;
 Task FOV = null;
 Task autoPistol = null;
+Task AntiAim = null;
+Task InfInspect = null;
 
 while (true)
 {
@@ -240,8 +247,39 @@ while (true)
         autoPistol = null;
     }
 
+    if (renderer.antiAim)
+    {
+        if(AntiAim==null || AntiAim.Status != TaskStatus.Running)
+        {
+            cancelTokenSourceAntiAim = new CancellationTokenSource();
+            tokenAntiAim = cancelTokenSourceAntiAim.Token;
+            AntiAim = new Task( ()=> Functions.AntiAim(swed, client, tokenAntiAim, renderer));
+            AntiAim.Start();
+        }
+    }
+    else if(AntiAim != null && AntiAim.Status==TaskStatus.Running && !renderer.antiAim)
+    {
+        cancelTokenSourceAntiAim.Cancel();
+        AntiAim = null;
+    }
 
-    Thread.Sleep(10); // Небольшая задержка, чтобы не нагружать процессор
+    if (renderer.inspect)
+    {
+        if(InfInspect == null || InfInspect.Status != TaskStatus.Running)
+        {
+            cancelTokenSourceInspect = new CancellationTokenSource();
+            cancelTokenSourceInspect.Cancel();
+            InfInspect = new Task( ()=>Functions.InfiniteInspect(swed,client, tokenInspect, renderer) );
+            InfInspect.Start();
+        }
+    }
+    else if(InfInspect!=null && InfInspect.Status!=TaskStatus.Running && !renderer.inspect)
+    {
+        cancelTokenSourceInspect.Cancel();
+        InfInspect = null;
+    } 
+
+        Thread.Sleep(10); // Небольшая задержка, чтобы не нагружать процессор
 }
 
 //imports
