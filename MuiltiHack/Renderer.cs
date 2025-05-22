@@ -137,8 +137,8 @@ namespace MuiltiHack
                 ImGui.Checkbox("jitter", ref jitterMode);
             }
 
-            ImGui.SeparatorText("inspect shit(dont work)");
-            ImGui.Checkbox("auto inspect", ref inspect);
+            //ImGui.SeparatorText("inspect shit(dont work)");
+            //ImGui.Checkbox("auto inspect", ref inspect);
             if (inspect)
             {
                 ImGui.Checkbox("manual", ref manual);

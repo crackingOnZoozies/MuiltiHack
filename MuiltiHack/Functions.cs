@@ -311,7 +311,7 @@ namespace MuiltiHack
                     if(!renderer.showTeam && entity.team == localPlayer.team) continue;
 
                     entity.health = swed.ReadInt(currentPawn, Offsets.m_iHealth);// reading hp
-
+                    if(entity.health <1 || entity.health>100) continue;
                     entity.position = swed.ReadVec(currentPawn, Offsets.m_vOldOrigin);
                     entity.viewOffset = swed.ReadVec(currentPawn, Offsets.m_vecViewOffset);
 
@@ -657,6 +657,7 @@ namespace MuiltiHack
                 // Проверяем, не была ли запрошена отмена задачи
                 if (token.IsCancellationRequested)
                 {
+                    swed.WriteFloat(client + yAddress, 0);
                     Thread.Sleep(10);
                     continue;
                 }
@@ -683,27 +684,28 @@ namespace MuiltiHack
                     {
                         if (y != 89)
                         {
-                            swed.WriteFloat(client + yAddress, 89);
+                            swed.WriteFloat(client + yAddress, 189);
                         }
                         swed.WriteFloat(client + xAddress, -x + 30);
                         swed.WriteFloat(client + xAddress, -x - 15);
                     }
-                    else if (renderer.jitterMode)
+                    if (renderer.jitterMode)
                     {
                         float jitterX = rnd.Next(-180, 180);
                         float jitterY = rnd.Next(-89, 89);
                         swed.WriteFloat(client + xAddress, jitterX);
                         swed.WriteFloat(client + yAddress, jitterY);
                     }
-                    else if (renderer.ultraSpin)
+                    if (renderer.ultraSpin)
                     {
                         swed.WriteFloat(client + xAddress, -x - 5);
                     }
                     else
                     {
-                        swed.WriteFloat(client + xAddress, -x);
-                        swed.WriteFloat(client + yAddress, 89);
-                        swed.WriteFloat(client + xAddress, -x - 15);
+                        //swed.WriteFloat(client + xAddress, -x);
+                        swed.WriteFloat(client + yAddress, 189);
+                        //swed.WriteFloat(client + xAddress, -x - 15);
+                        swed.WriteFloat(client + yAddress, -189);
                     }
 
                     Thread.Sleep(5);
@@ -721,33 +723,27 @@ namespace MuiltiHack
 
         }
 
-        public static void InfiniteInspect(Swed swed, IntPtr client,CancellationToken token, Renderer renderer)
-        {
-            //& 0x8000
-            // Проверяем, не была ли запрошена отмена задачи
-            const int VK_F = 0x46; // Virtual key code for 'F'
+        private const int VK_F = 0x46;
+        private const uint KEYEVENTF_KEYDOWN = 0x0000;
+        private const uint KEYEVENTF_KEYUP = 0x0002;
 
+        public static void InfiniteInspect(Swed swed, IntPtr client, CancellationToken token, Renderer renderer)
+        {
             while (true)
             {
                 if (token.IsCancellationRequested)
                 {
+                    // Гарантированно отпускаем клавишу даже при ошибках
+                    keybd_event((byte)VK_F, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
                     Thread.Sleep(10);
                     continue;
                 }
 
-                bool isFPressed = (GetAsyncKeyState(VK_F) ) != 0;
-                bool shouldInspect = renderer.inspect || (renderer.manual || isFPressed);
+                // Нажимаем F
+                keybd_event((byte)VK_F, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
+                
 
-                if (shouldInspect)
-                {
-                    IntPtr inspectAddy = swed.ReadPointer(client + Offsets.lookatweapon);
-                    swed.WriteInt(inspectAddy, 65537);
-                    Thread.Sleep(2);
-                }
-                else
-                {
-                    Thread.Sleep(10);
-                }
+                Thread.Sleep(2);
             }
         }
 
@@ -771,6 +767,9 @@ namespace MuiltiHack
 
         [DllImport("user32.dll")]
         private static extern int GetSystemMetrics(int nIndex);
+
+        [DllImport("user32.dll")]
+        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
 
 
     }
