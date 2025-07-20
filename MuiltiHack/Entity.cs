@@ -41,6 +41,7 @@ namespace MuiltiHack
         public uint lifeState { get; set; }
         public float pixelDistance { get; set; }
         public bool scopped { get; set; }
+        public int zoomLevel { get; set; }
 
     }
     public enum BonesIds
@@ -212,17 +213,5 @@ namespace MuiltiHack
         KNIFE_WIDOWMAKER = 523,
 
     };
-    public enum Pistols
-    {
-        DEAGLE = 1,
-        BERETAS = 2,     // Dual Berettas
-        FIVESEVEN = 3,   // Five-SeveN
-        GLOCK = 4,       // Glock-18
-        TEC9 = 30,       // Tec-9
-        HKP2000 = 32,    // P2000
-        P250 = 36,
-        USP_SILENCER = 61, // USP-S
-        CZ75A = 63,      // CZ75-Auto
-        REVOLVER = 64     // R8 Revolver
-    }
+    
 }

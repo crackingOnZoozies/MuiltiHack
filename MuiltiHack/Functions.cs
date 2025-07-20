@@ -143,9 +143,6 @@ namespace MuiltiHack
 
                     swed.WriteBool(currentPawn, Offsets.m_entitySpottedState + Offsets.m_bSpotted, true);
 
-
-
-
                 }
                 Thread.Sleep(50);
 
@@ -499,6 +496,17 @@ namespace MuiltiHack
                         Vector2 newAngles = Calculate.CalculateAngles(playerView, entities[0].head);
                         Vector3 newNagles3D = new Vector3(newAngles.Y, newAngles.X, 0.0f);
 
+                        int zoomLevel = swed.ReadInt(swed.ReadPointer(localPlayerPawn, Offsets.m_pClippingWeapon), Offsets.m_zoomLevel);
+
+                        if(zoomLevel > 0 && zoomLevel<3 && !IsKnife(swed.ReadShort(swed.ReadPointer(localPlayerPawn, Offsets.m_pClippingWeapon), Offsets.m_AttributeManager + Offsets.m_Item + Offsets.m_iItemDefinitionIndex)))
+                        {
+                            localPlayer.zoomLevel = zoomLevel;
+                        }
+                        else
+                        {
+                            localPlayer.zoomLevel = 0;
+                        }
+
                         if (entities[0].pixelDistance < renderer.FOV && renderer.useFov)
                         {
                             swed.WriteVec(client, Offsets.dwViewAngles, newNagles3D);
@@ -517,7 +525,7 @@ namespace MuiltiHack
 
                     }
                 }
-
+                renderer.UpdateLocalPlayer(localPlayer);
 
             }
 
@@ -548,7 +556,7 @@ namespace MuiltiHack
             }
         }
 
-        public static void RCS(Swed swed, IntPtr client, CancellationToken token)
+        public static void RCS(Swed swed, IntPtr client,Renderer renderer, CancellationToken token)
         {
             Vector3 oldPunch = new Vector3(0, 0, 0);
             while (true)
@@ -563,12 +571,23 @@ namespace MuiltiHack
                 Thread.Sleep(1);
 
 
+
                 IntPtr localPlyer = swed.ReadPointer(client, Offsets.dwLocalPlayerPawn);
+
+                IntPtr currentWeapon = swed.ReadPointer(localPlyer, Offsets.m_pClippingWeapon);
+                // get item defenition index
+                short weponDefenitionIndex = swed.ReadShort(currentWeapon, Offsets.m_AttributeManager + Offsets.m_Item + Offsets.m_iItemDefinitionIndex);
+                if(IsPistol(weponDefenitionIndex))
+                {
+                    //renderer.recoitTrace = false;
+                    Thread.Sleep(50);
+                    continue ;
+                }
 
                 int shotsFired = swed.ReadInt(localPlyer, Offsets.m_iShotsFired);
 
 
-                if (shotsFired != 0)
+                if (shotsFired != 0 && (shotsFired<renderer.maxRecoil || renderer.maxRecoil==-1))
                 {
 
                     float y = swed.ReadFloat(client + Offsets.dwViewAngles);
@@ -604,7 +623,6 @@ namespace MuiltiHack
 
         public static void AutoPistolShoting(Swed swed, IntPtr client, CancellationToken token, Renderer renderer)
         {
-            int[] ints = { 1, 2, 3, 4, 30, 32, 36, 61, 64 };
             while (true)
             {
 
@@ -622,19 +640,15 @@ namespace MuiltiHack
                 IntPtr currentWeapon = swed.ReadPointer(localPlyer, Offsets.m_pClippingWeapon);
                 // get item defenition index
                 short weponDefenitionIndex = swed.ReadShort(currentWeapon, Offsets.m_AttributeManager + Offsets.m_Item + Offsets.m_iItemDefinitionIndex);
-                foreach (var item in ints)
+
+                if (IsPistol(weponDefenitionIndex) && GetAsyncKeyState(0x01) < 0)
                 {
-                    if (item == weponDefenitionIndex && GetAsyncKeyState(0x01) < 0)
-                    {
 
-                        swed.WriteInt(client, Offsets.attack, 65537); // + attack
-                        Thread.Sleep(10);
-                        swed.WriteInt(client, Offsets.attack, 16777472); // - attack
-                        Thread.Sleep(10);
+                    swed.WriteInt(client, Offsets.attack, 65537); // + attack
+                    Thread.Sleep(10);
+                    swed.WriteInt(client, Offsets.attack, 16777472); // - attack
+                    Thread.Sleep(10);
 
-
-                        break;
-                    }
                 }
 
             }
@@ -657,7 +671,6 @@ namespace MuiltiHack
                 // Проверяем, не была ли запрошена отмена задачи
                 if (token.IsCancellationRequested)
                 {
-                    swed.WriteFloat(client + yAddress, 0);
                     Thread.Sleep(10);
                     continue;
                 }
@@ -706,9 +719,15 @@ namespace MuiltiHack
                         swed.WriteFloat(client + yAddress, 189);
                         //swed.WriteFloat(client + xAddress, -x - 15);
                         swed.WriteFloat(client + yAddress, -189);
+                        
                     }
 
                     Thread.Sleep(5);
+                    if (renderer.stabilize)
+                    {
+                        swed.WriteFloat(client + yAddress, 0);
+                        Thread.Sleep(5);
+                    }
                 }
 
                 // Восстановление оригинальных значений при выключении
@@ -757,6 +776,47 @@ namespace MuiltiHack
             Thread.Sleep(10);
         }
 
+        //functions
+        public static bool IsPistol( short weponDefenitionIndex)
+        {
+            int[] ints = { 1, 2, 3, 4, 30, 32, 36, 61, 64 };
+            foreach (var item in ints)
+            {
+                if (item == weponDefenitionIndex && GetAsyncKeyState(0x01) < 0)
+                {
+                    return true;
+                }
+            }
+            
+            return false;
+
+        }
+
+        public static bool IsSniper(short weponDefenitionIndex)
+        {
+            int[] ints = {9,11,38,40,};
+            foreach (var item in ints)
+            {
+                if (item == weponDefenitionIndex && GetAsyncKeyState(0x01) < 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        public static bool IsKnife(short weaponDefinitionIndex)
+        {
+            int[] knifeIDs = {41,42,59,80,500,505,506,507,508,509,512,514,515,516,519,520,522,523};
+
+            foreach (int id in knifeIDs)
+            {
+                if (id == weaponDefinitionIndex && GetAsyncKeyState(0x01) < 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         //imports
         [DllImport("user32.dll")]

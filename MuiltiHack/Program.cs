@@ -205,7 +205,7 @@ while (true)
         {
             cancelTokenSourceRCS = new CancellationTokenSource();
             tokenRCS = cancelTokenSourceRCS.Token;
-            RCS = new Task(() => Functions.RCS(swed, client,tokenRCS));
+            RCS = new Task(() => Functions.RCS(swed, client,renderer,tokenRCS));
             RCS.Start();
         }
     }

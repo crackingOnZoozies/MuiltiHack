@@ -10,18 +10,18 @@ namespace MuiltiHack
     {
 
         //buttons.cs
-        public static int attack = 0x18448F0;
-        public static int jump = 0x1844E00;
-        public static int duck = 0x1844E90;
-        public static int lookatweapon = 0x1A6AE20;
+        public static int attack = 0x18518E0;
+        public static int jump = 0x1851DF0;
+        public static int duck = 0x1851E80;
+        public static int lookatweapon = 0x1A781A0;
 
         //offsets.cs
-        public static int dwViewAngles = 0x1A6B2D0;
-        public static int dwLocalPlayerPawn = 0x184C0D0;
-        public static int dwEntityList = 0x19F7F00;
+        public static int dwViewAngles = 0x1A78650;
+        public static int dwLocalPlayerPawn = 0x18590D0;
+        public static int dwEntityList = 0x1A05670;
 
-        public static int dwGameRules = 0x1A5C7E8;
-        public static int dwViewMatrix = 0x1A60EE0; // offset for circle
+        public static int dwGameRules = 0x1A69CB8;
+        public static int dwViewMatrix = 0x1A6E3F0; // offset for circle
 
         //client.dll.cs
         public static int m_hPlayerPawn = 0x824;
@@ -34,7 +34,7 @@ namespace MuiltiHack
         public static int m_modelState = 0x170; // head
         public static int m_pGameSceneNode = 0x328;
 
-        public static int m_entitySpottedState = 0x23D0;
+        public static int m_entitySpottedState = 0x11A8;
         public static int m_bSpotted = 0x8;
 
         public static int m_iIDEntIndex = 0x1458;
@@ -59,10 +59,11 @@ namespace MuiltiHack
 
         public static int m_bBombPlanted = 0x9A5; // bool
         public static int m_bOldIsScoped = 0x242C; // bool
+        public static int m_zoomLevel = 0x1B20; // int32
 
         //engine
-        public static nint dwWindowHeight = 0x62457C;
-        public static nint dwWindowWidth = 0x624578;
+        public static nint dwWindowHeight = 0x62359C;
+        public static nint dwWindowWidth = 0x623598;
 
 
         public static bool bBombPlanted = false;

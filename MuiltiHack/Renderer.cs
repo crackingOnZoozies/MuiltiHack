@@ -83,6 +83,7 @@ namespace MuiltiHack
         public bool useFov = false;
         public bool aimOnClosest = false;
         public bool followRecoil = false;
+        public int maxRecoil = -1;
         public bool legitAimBot = false;
 
         public bool autoLock = false;
@@ -116,6 +117,7 @@ namespace MuiltiHack
 
         //anti aim
         public bool antiAim = false;
+        public bool stabilize = true;
         public bool backOnly = false;
         public bool ultraSpin = false;
         public bool jitterMode = false;
@@ -132,6 +134,7 @@ namespace MuiltiHack
             ImGui.Checkbox("on anti aim", ref antiAim);
             if(ImGui.CollapsingHeader("antiAim modes"))
             {
+                ImGui.Checkbox("stabilizer", ref stabilize);
                 ImGui.Checkbox("simple backwards aimbot", ref backOnly);
                 ImGui.Checkbox("retarded spin", ref ultraSpin);
                 ImGui.Checkbox("jitter", ref jitterMode);
@@ -205,9 +208,17 @@ namespace MuiltiHack
             //rcs
             ImGui.SeparatorText("recoil conatrol");
             ImGui.Checkbox("rcs switch", ref recoitTrace);
+            if (recoitTrace)
+            {
+                ImGui.DragInt("max rcs bullets", ref maxRecoil);
+            }
+            else
+            {
+                maxRecoil = -1;
+            }
 
-            // Секция Bomb Timer
-            ImGui.SeparatorText("Bomb Timer Settings");
+                // Секция Bomb Timer
+                ImGui.SeparatorText("Bomb Timer Settings");
             
             ImGui.Checkbox("Enable Bomb Timer", ref bombTimer); // Checkbox для включения/выключения bombTimer
 
@@ -336,7 +347,7 @@ namespace MuiltiHack
                 }
 
             }
-
+            
 
         }
 
@@ -597,9 +608,18 @@ namespace MuiltiHack
                 );
             if (aimbot && useFov)
             {
-                ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-                drawList.AddCircle(new Vector2(screenSize.X / 2, screenSize.Y / 2), FOV, ImGui.ColorConvertFloat4ToU32(circleColor));
+                if(localPlayer.zoomLevel == 0)
+                {
+                    ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+                    drawList.AddCircle(new Vector2(screenSize.X / 2, screenSize.Y / 2), FOV, ImGui.ColorConvertFloat4ToU32(circleColor));
+                }
+                else
+                {
+                    ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+                    drawList.AddCircle(new Vector2(screenSize.X / 2, screenSize.Y / 2), FOV*localPlayer.zoomLevel, ImGui.ColorConvertFloat4ToU32(circleColor));
+                }
             }
+                
         }
         
 
