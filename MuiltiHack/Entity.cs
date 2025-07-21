@@ -20,6 +20,7 @@ namespace MuiltiHack
         public List<Vector2> bones2d { get; set; }
 
         public float distance { get; set; }
+        public float pixelDistance { get; set; }
         //////////
 
         public short currentWeaponIndex { get; set; }
@@ -27,22 +28,28 @@ namespace MuiltiHack
 
         public int team { get; set; }
         public int health { get; set; }
+        public int zoomLevel { get; set; }
+        public int armorHP { get; set; }
+        public int ammoInMag { get; set; }
+
+        public uint lifeState { get; set; }
 
         public string name { get; set; }
 
         public bool spotted { get; set; }
         public bool scoped { get; set; }
+        public bool scopped { get; set; }
+        public bool hasHelmet { get; set; }
+        public bool hasKit { get; set; }
+        public bool isDefusing { get; set; }
 
         public IntPtr pawnAddress { get; set; }
         public IntPtr controllerPawn { get; set; }
         public Vector3 view { get; set; }
         public Vector3 head { get; set; }
         public Vector2 head2d { get; set; }
-        public uint lifeState { get; set; }
-        public float pixelDistance { get; set; }
-        public bool scopped { get; set; }
-        public int zoomLevel { get; set; }
-
+        
+        
     }
     public enum BonesIds
     {

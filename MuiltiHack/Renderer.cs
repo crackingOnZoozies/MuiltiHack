@@ -61,6 +61,11 @@ namespace MuiltiHack
         private bool box = false;
         private bool drawLine = false;
         public bool showTeam = false;
+        public bool showHelmet = false;
+        public bool showArmor = false;
+        public bool showIfHasKit = false;
+        public bool showIfDefusing = false;
+        public bool showAmmoInMag = false;
 
         private float boneThickness = 4;
         public float AutoSpotDist = 1000;
@@ -73,6 +78,7 @@ namespace MuiltiHack
         private Vector4 nameColor = new Vector4(1, 1, 1, 1); //white
         private Vector4 hiddenColor = new Vector4(0, 0, 0, 1); //black
         private Vector4 BoneColor = new Vector4(1, 0, 2, 1);
+        private Vector4 armorColor = new Vector4(1,1,1,1); //white
 
         //aimbot
         public float FOV = 50; // in pixels
@@ -271,9 +277,26 @@ namespace MuiltiHack
             {
                 if(ImGui.CollapsingHeader("ESP settings"))
                 {
+                    
                     ImGui.Checkbox("show team", ref showTeam);
+
+                    ImGui.Checkbox("show if defusing ", ref showIfDefusing);
+
+                    ImGui.Checkbox("show armor hp", ref showArmor);
+                    if(enableBones || box)
+                    {
+                        ImGui.Checkbox("show helmet", ref showHelmet);
+                    }
+
+                    if(showArmor && ImGui.CollapsingHeader("armor p bar color and helmet color"))
+                    {
+                        ImGui.ColorPicker4("##Bone color", ref armorColor);
+                    }
                     //ImGui.SliderFloat("max distance for esp renderer", ref maxEspDist, 0, 10000);
+
+                    ImGui.Checkbox("show ammo in mag", ref showAmmoInMag);
                     ImGui.Checkbox("box", ref box);
+
                     ImGui.Checkbox("draw line", ref drawLine);
 
                     ImGui.Checkbox("bones", ref enableBones);
@@ -284,6 +307,7 @@ namespace MuiltiHack
                     }
 
                     ImGui.Checkbox("show only spotted", ref enableVisibilityCheck);
+
                     ImGui.Checkbox("enable name", ref enableName);
                     if (enableName)
                     {
@@ -336,8 +360,8 @@ namespace MuiltiHack
                     //draw methods (all)
                     if(enableEsp) 
                     {
-                        DrawHealthBar(entity);
-                        ScopedCheck(entity);
+                        DrawHealthBarAndArmor(entity);
+                        ScopedCheckIfDefusingHasKitHasAmmoInMag(entity);
                     }
                     if (box) DrawBox(entity);
                     if (drawLine) DrawLine(entity);
@@ -432,7 +456,7 @@ namespace MuiltiHack
 
 
                 // Draw circle
-                drawList.AddCircle(circleCenter, circleRadius, ImGui.ColorConvertFloat4ToU32(boxColor));
+                drawList.AddCircle(circleCenter, circleRadius, ImGui.ColorConvertFloat4ToU32(showHelmet && entity.hasHelmet? armorColor: boxColor));
             }
 
         }
@@ -450,7 +474,7 @@ namespace MuiltiHack
 
         }
 
-        private void DrawHealthBar(Entity entity)
+        private void DrawHealthBarAndArmor(Entity entity)
         {
             //calc the hp bar height
             float entityHeight = entity.position2d.Y - entity.viewPosition2D.Y;
@@ -462,20 +486,25 @@ namespace MuiltiHack
             //calc health bar width and height
             float barPercentWidth = 0.05f; // 5% of box width
             float barHeight = entityHeight * (entity.health / 100f);
+            float armorHeight = entityHeight * (entity.armorHP / 100f); // Расчёт высоты полоски брони
 
             float barPixelWidth = barPercentWidth * (boxRight - boxLeft);
 
-            //calc bar rectangle
+            //calc health bar rectangle
             Vector2 barTop = new Vector2(boxLeft - barPixelWidth, entity.position2d.Y - barHeight);
             Vector2 barBottom = new Vector2(boxLeft, entity.position2d.Y);
 
-            //get bar color
-
-
-            //drawing 
+            //drawing health bar
             drawList.AddRectFilled(barTop, barBottom, ImGui.ColorConvertFloat4ToU32(barColor));
 
+            //calc armor bar rectangle (переходим к левой стороне)
+            Vector2 armorTop = new Vector2(boxLeft - barPixelWidth - barPixelWidth, entity.position2d.Y - armorHeight); // Добавляем ещё один barPixelWidth для сдвига
+            Vector2 armorBottom = new Vector2(boxLeft - barPixelWidth, entity.position2d.Y);
+
+            //drawing armor bar
+            drawList.AddRectFilled(armorTop, armorBottom, ImGui.ColorConvertFloat4ToU32(armorColor)); // Белая полоска для брони
         }
+
         private void DrawNameAndWeapon(Entity entity)
         {
             if (enableName)
@@ -511,20 +540,47 @@ namespace MuiltiHack
             ImGui.SetWindowFontScale(1.0f);
 
         }
-        private void ScopedCheck(Entity entity)
+        private void ScopedCheckIfDefusingHasKitHasAmmoInMag(Entity entity)
         {
             Vector2 textLocation = new Vector2(entity.viewPosition2D.X, entity.position2d.Y + yOffset);
+            float offset = 0;
             if (entity.scoped)
             {
                 drawList.AddText(textLocation, ImGui.ColorConvertFloat4ToU32(nameColor), $"SCOPPED");
+
+                // Проверка на состояние "Defusing"
+                if (entity.isDefusing)
+                {
+                    offset += 15;
+                    textLocation.Y += offset; // Увеличиваем Y-координату для новой строки
+                    drawList.AddText(textLocation, ImGui.ColorConvertFloat4ToU32(nameColor), $"Defusing");
+                }
+            }
+            // Проверка на состояние "Defusing"
+            else if (entity.isDefusing && showIfDefusing)
+            {
+                drawList.AddText(textLocation, ImGui.ColorConvertFloat4ToU32(nameColor), $"Defusing with " + (entity.hasKit ? "" : "no ") + "kits");
+                offset += 15;
+            }
+            if (showAmmoInMag)
+            {
+                ShowAmmoInMagFunc(entity, offset);
             }
         }
+
+        void ShowAmmoInMagFunc(Entity entity, float offset)
+        {
+            Vector2 textLocation = new Vector2(entity.viewPosition2D.X, entity.position2d.Y + yOffset);
+            textLocation.Y += offset;
+            drawList.AddText(textLocation, ImGui.ColorConvertFloat4ToU32(nameColor), $"{entity.ammoInMag} ammo ");
+        }
+
         // bones draw methods
         private void DrawBones(Entity entity)
         {
             // get ether team or enemy colorr depending on the team
             uint uintColor = ImGui.ColorConvertFloat4ToU32(BoneColor);
-
+            uint uintColorHead = ImGui.ColorConvertFloat4ToU32(showHelmet && entity.hasHelmet? armorColor: BoneColor);
 
             float currentBoneThickness;
 
@@ -562,7 +618,7 @@ namespace MuiltiHack
 
             drawList.AddLine(entity.bones2d[11], entity.bones2d[12], uintColor, currentBoneThickness);
 
-            drawList.AddCircle(entity.bones2d[2], (entity.position2d.Y - entity.viewPosition2D.Y) / 8.5f, uintColor);
+            drawList.AddCircle(entity.bones2d[2], (entity.position2d.Y - entity.viewPosition2D.Y) / 8.5f, uintColorHead);
 
 
         }

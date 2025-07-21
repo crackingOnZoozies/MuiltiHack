@@ -61,6 +61,13 @@ namespace MuiltiHack
         public static int m_bOldIsScoped = 0x242C; // bool
         public static int m_zoomLevel = 0x1B20; // int32
 
+        public static int m_bPrevDefuser = 0x156E; // bool
+        public static int m_bPrevHelmet = 0x156F; // bool
+        public static int m_nPrevArmorVal = 0x1570;
+        public static int m_bIsDefusing = 0x23EA; // bool
+
+        public static int m_iClip1 = 0x1678; // int32
+
         //engine
         public static nint dwWindowHeight = 0x62359C;
         public static nint dwWindowWidth = 0x623598;

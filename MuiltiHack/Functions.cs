@@ -307,23 +307,38 @@ namespace MuiltiHack
 
                     if(!renderer.showTeam && entity.team == localPlayer.team) continue;
 
+                    
                     entity.health = swed.ReadInt(currentPawn, Offsets.m_iHealth);// reading hp
+
                     if(entity.health <1 || entity.health>100) continue;
+
                     entity.position = swed.ReadVec(currentPawn, Offsets.m_vOldOrigin);
+
                     entity.viewOffset = swed.ReadVec(currentPawn, Offsets.m_vecViewOffset);
 
                     entity.position2d = Calculate.WordToScreen(viewMatrix, entity.position, screenSize);
+
                     entity.viewPosition2D = Calculate.WordToScreen(viewMatrix, Vector3.Add(entity.position, entity.viewOffset), screenSize);
 
                     entity.distance = Vector3.Distance(entity.position, localPlayer.position);
 
                     if(renderer.enableVisibilityCheck && !entity.spotted) continue;
 
+                    entity.isDefusing = swed.ReadBool(currentPawn, Offsets.m_bIsDefusing);
+                    entity.hasHelmet = swed.ReadBool(currentPawn, Offsets.m_bPrevHelmet);
+                    entity.armorHP = swed.ReadInt(currentPawn, Offsets.m_nPrevArmorVal);
+                    entity.hasKit = swed.ReadBool(currentPawn, Offsets.m_bPrevDefuser);
+
+                    entity.ammoInMag = swed.ReadInt(currentWeapon, Offsets.m_iClip1);
+
                     entity.bones = Calculate.ReadBones(boneMatrix, swed);
 
                     entity.bones2d = Calculate.ReadBones2d(entity.bones, viewMatrix, renderer.screenSize);
+
                     entity.currentWeaponIndex = weponDefenitionIndex;
+
                     entity.currentWeaponName = Enum.GetName(typeof(Weapon), weponDefenitionIndex);
+
                     entities.Add(entity);
                 }
 
