@@ -554,6 +554,7 @@ namespace MuiltiHack
                     offset += 15;
                     textLocation.Y += offset; // Увеличиваем Y-координату для новой строки
                     drawList.AddText(textLocation, ImGui.ColorConvertFloat4ToU32(nameColor), $"Defusing");
+                    offset += 15;
                 }
             }
             // Проверка на состояние "Defusing"
@@ -564,13 +565,12 @@ namespace MuiltiHack
             }
             if (showAmmoInMag)
             {
-                ShowAmmoInMagFunc(entity, offset);
+                ShowAmmoInMagFunc(entity, offset,textLocation);
             }
         }
 
-        void ShowAmmoInMagFunc(Entity entity, float offset)
+        void ShowAmmoInMagFunc(Entity entity, float offset, Vector2 textLocation)
         {
-            Vector2 textLocation = new Vector2(entity.viewPosition2D.X, entity.position2d.Y + yOffset);
             textLocation.Y += offset;
             drawList.AddText(textLocation, ImGui.ColorConvertFloat4ToU32(nameColor), $"{entity.ammoInMag} ammo ");
         }
