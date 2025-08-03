@@ -1,287 +1,162 @@
 ﻿using MuiltiHack;
 using Swed64;
-using System.Runtime.InteropServices;
+using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 Swed swed = new Swed("cs2");
 IntPtr client = swed.GetModuleBase("client.dll");
 IntPtr engine = swed.GetModuleBase("engine2.dll");
 
 Renderer renderer = new Renderer();
-renderer.screenSize = new Vector2(swed.ReadInt(engine + Offsets.dwWindowWidth), swed.ReadInt(engine + Offsets.dwWindowHeight));
+renderer.screenSize = new Vector2(
+    swed.ReadInt(engine + Offsets.dwWindowWidth),
+    swed.ReadInt(engine + Offsets.dwWindowHeight)
+);
 
+// Запуск рендерера в отдельной задаче
+Task.Run(renderer.Start);
 
-Thread rendererThread = new Thread(new ThreadStart(renderer.Start().Wait));
-rendererThread.Start();
+// Словарь для управления функциями
+var features = new Dictionary<string, FeatureController>();
 
-//Task FovChanger = new Task(() => Functions.fovChanger(swed, client, renderer));
-//FovChanger.Start();
-
-// Токены для управления задачами
-
-
-CancellationTokenSource cancelTokenSourceAntiFlash = new CancellationTokenSource();
-CancellationToken tokenAntiFlash = cancelTokenSourceAntiFlash.Token;
-
-CancellationTokenSource cancelTokenSourceBhop = new CancellationTokenSource();
-CancellationToken tokenBhop = cancelTokenSourceBhop.Token;
-
-CancellationTokenSource cancelTokenSourceRadar = new CancellationTokenSource();
-CancellationToken tokenRadar = cancelTokenSourceRadar.Token;
-
-CancellationTokenSource cancelTokenSourceTrigger = new CancellationTokenSource();
-CancellationToken tokenTrigger = cancelTokenSourceRadar.Token;
-
-CancellationTokenSource cancelTokenSourceBombTimer = new CancellationTokenSource();
-CancellationToken tokenBombTimer = cancelTokenSourceBombTimer.Token;
-
-CancellationTokenSource cancelTokenSourceESP = new CancellationTokenSource();
-CancellationToken tokenESP = cancelTokenSourceESP.Token;
-
-CancellationTokenSource cancelTokenSourceAimBot = new CancellationTokenSource();
-CancellationToken tokenAimBot = cancelTokenSourceAimBot.Token;
-
-CancellationTokenSource cancelTokenSourceRCS = new CancellationTokenSource();
-CancellationToken tokenRCS = cancelTokenSourceRCS.Token;
-
-CancellationTokenSource cancelTokenSourceFOV = new CancellationTokenSource();
-CancellationToken tokenFOV = cancelTokenSourceFOV.Token;
-
-CancellationTokenSource cancelTokenSourceAutoPistol = new CancellationTokenSource();
-CancellationToken tokenAutoPistol = cancelTokenSourceAutoPistol.Token;
-
-CancellationTokenSource cancelTokenSourceAntiAim = new CancellationTokenSource();
-CancellationToken tokenAntiAim = cancelTokenSourceAntiAim.Token;
-
-CancellationTokenSource cancelTokenSourceInspect = new CancellationTokenSource();
-CancellationToken tokenInspect = cancelTokenSourceInspect.Token;
-
-// Инициализация задач
-Task antiFlash = null;
-Task bhop = null;
-Task radar = null;
-Task trigger = null;
-Task ESP = null;
-Task AimBot = null;
-Task RCS = null;    
-Task bombTimer = null;
-Task FOV = null;
-Task autoPistol = null;
-Task AntiAim = null;
-Task InfInspect = null;
+// Инициализация контроллеров функций
+features.Add("AntiFlash", new FeatureController());
+features.Add("Bhop", new FeatureController());
+features.Add("Radar", new FeatureController());
+features.Add("Trigger", new FeatureController());
+features.Add("BombTimer", new FeatureController());
+features.Add("ESP", new FeatureController());
+features.Add("AimBot", new FeatureController());
+features.Add("RCS", new FeatureController());
+features.Add("FOV", new FeatureController());
+features.Add("AutoPistol", new FeatureController());
+features.Add("AntiAim", new FeatureController());
+features.Add("Inspect", new FeatureController());
 
 while (true)
 {
-    IntPtr localPlayerPawn = swed.ReadPointer(client, Offsets.dwLocalPlayerPawn);
+    // Кешируем часто используемые указатели только при необходимости
+    IntPtr localPlayerPawn = IntPtr.Zero;
+    IntPtr entityList = IntPtr.Zero;
+    IntPtr listEntry = IntPtr.Zero;
+    IntPtr gameRules = IntPtr.Zero;
 
-    IntPtr entityList = swed.ReadPointer(client, Offsets.dwEntityList);
+    // Обновление состояний функций
+    UpdateFeature("AntiFlash", () => Functions.AntiFlash(swed, client, features["AntiFlash"].Token));
+    UpdateFeature("Bhop", () => Functions.Bhop(swed, client, features["Bhop"].Token, renderer));
 
-    IntPtr listentry = swed.ReadPointer(entityList, 0x10);
-
-    IntPtr GameRules = swed.ReadPointer(client, Offsets.dwGameRules);
-
-    // Управление AntiFlash
-    if (renderer.antiflash)
+    if (NeedPointerUpdate("Radar") || NeedPointerUpdate("ESP") || NeedPointerUpdate("AimBot"))
     {
-        if (antiFlash == null || antiFlash.Status != TaskStatus.Running)
-        {
-            cancelTokenSourceAntiFlash = new CancellationTokenSource();
-            tokenAntiFlash = cancelTokenSourceAntiFlash.Token;
-            antiFlash = new Task(() => Functions.AntiFlash(swed, client, tokenAntiFlash));
-            antiFlash.Start();
-        }
-    }
-    else if (antiFlash != null && antiFlash.Status == TaskStatus.Running && !renderer.antiflash)
-    {
-        cancelTokenSourceAntiFlash.Cancel();
-        antiFlash = null;
+        entityList = swed.ReadPointer(client, Offsets.dwEntityList);
+        listEntry = swed.ReadPointer(entityList, 0x10);
     }
 
-    // Управление BHop
-    if (renderer.bhop)
+    UpdateFeature("Radar", () => Functions.Radar(swed, entityList, listEntry, features["Radar"].Token));
+
+    if (NeedPointerUpdate("Trigger") || NeedPointerUpdate("AimBot"))
     {
-        if (bhop == null || bhop.Status != TaskStatus.Running)
-        {
-            cancelTokenSourceBhop = new CancellationTokenSource();
-            tokenBhop = cancelTokenSourceBhop.Token;
-            bhop = new Task(() => Functions.Bhop(swed, client,  tokenBhop, renderer));
-            bhop.Start();
-        }
-    }
-    else if (bhop != null && bhop.Status == TaskStatus.Running && !renderer.bhop)
-    {
-        cancelTokenSourceBhop.Cancel();
-        bhop = null;
+        localPlayerPawn = swed.ReadPointer(client, Offsets.dwLocalPlayerPawn);
     }
 
-    // Управление Radar
-    if (renderer.radar)
+    UpdateFeature("Trigger", () => Functions.Trigger(
+        swed, client, entityList, localPlayerPawn, features["Trigger"].Token,
+        renderer.millisecondsDelay, renderer.autoTrigger, renderer.autoShoot,
+        renderer.legitTrigger, renderer.aimOnTeam
+    ));
+
+    if (NeedPointerUpdate("BombTimer"))
     {
-        if (radar == null || radar.Status != TaskStatus.Running)
-        {
-            cancelTokenSourceRadar = new CancellationTokenSource();
-            tokenRadar = cancelTokenSourceRadar.Token;
-            radar = new Task(() => Functions.Radar(swed, entityList, listentry, tokenRadar));
-            radar.Start();
-        }
-    }
-    else if (radar != null && radar.Status == TaskStatus.Running && !renderer.radar)
-    {
-        cancelTokenSourceRadar.Cancel();
-        radar = null;
+        gameRules = swed.ReadPointer(client, Offsets.dwGameRules);
     }
 
-    // Управление Trigger
-    if (renderer.trigger)
-    {
-        if (trigger == null || trigger.Status != TaskStatus.Running)
-        {
-            cancelTokenSourceTrigger = new CancellationTokenSource();
-            tokenTrigger = cancelTokenSourceTrigger.Token;
-            trigger = new Task(() => Functions.Trigger(swed, client,entityList,localPlayerPawn, tokenTrigger, renderer.millisecondsDelay, renderer.autoTrigger, renderer.autoShoot,renderer.legitTrigger,renderer.aimOnTeam));
-            trigger.Start();
-        }
-    }
-    else if (trigger != null && trigger.Status == TaskStatus.Running && !renderer.trigger)
-    {
-        cancelTokenSourceTrigger.Cancel();
-        trigger = null;
-    }
+    UpdateFeature("BombTimer", () => Functions.BombTimer(swed, gameRules, features["BombTimer"].Token, renderer));
+    UpdateFeature("ESP", () => Functions.ESP(swed, client, entityList, listEntry, renderer, features["ESP"].Token));
+    UpdateFeature("AimBot", () => Functions.AimBot(swed, client, entityList, localPlayerPawn, listEntry, renderer, features["AimBot"].Token));
+    UpdateFeature("RCS", () => Functions.RCS(swed, client, renderer, features["RCS"].Token));
+    UpdateFeature("FOV", () => Functions.fovChanger(swed, client, renderer, features["FOV"].Token));
+    UpdateFeature("AutoPistol", () => Functions.AutoPistolShoting(swed, client, features["AutoPistol"].Token, renderer));
+    UpdateFeature("AntiAim", () => Functions.AntiAim(swed, client, features["AntiAim"].Token, renderer));
+    UpdateFeature("Inspect", () => Functions.InfiniteInspect(swed, client, features["Inspect"].Token, renderer));
 
-    // Управление BombTimer
-    if (renderer.bombTimer)
-    {
-        if (bombTimer == null || bombTimer.Status != TaskStatus.Running)
-        {
-            cancelTokenSourceBombTimer = new CancellationTokenSource();
-            tokenBombTimer = cancelTokenSourceBombTimer.Token;
-            bombTimer = new Task(() => Functions.BombTimer(swed, GameRules, tokenBombTimer, renderer));
-            bombTimer.Start();
-        }
-    }
-    else if (bombTimer != null && bombTimer.Status == TaskStatus.Running && !renderer.bombTimer)
-    {
-        cancelTokenSourceBombTimer.Cancel();
-        bombTimer = null;
-    }
-
-    if(renderer.enableEsp)
-    {
-        if(ESP == null || ESP.Status != TaskStatus.Running)
-        {
-            cancelTokenSourceESP = new CancellationTokenSource();
-            tokenESP = cancelTokenSourceESP.Token;
-            ESP = new Task(() => Functions.ESP(swed, client, entityList, listentry, renderer, tokenESP));
-            ESP.Start();
-        }
-    }
-    else if(ESP != null && ESP.Status == TaskStatus.Running && !renderer.enableEsp)
-    {
-        cancelTokenSourceESP.Cancel();
-        ESP = null;
-    }
-
-    if (renderer.aimbot)
-    {
-        if(AimBot == null || AimBot.Status != TaskStatus.Running)
-        {
-            cancelTokenSourceAimBot = new CancellationTokenSource();
-            tokenAimBot = cancelTokenSourceAimBot.Token;
-            AimBot = new Task(() => Functions.AimBot(swed, client, entityList, localPlayerPawn, listentry, renderer, tokenESP));
-            AimBot.Start();
-        }
-    }
-    else if (AimBot != null && AimBot.Status == TaskStatus.Running && !renderer.aimbot)
-    {
-        cancelTokenSourceAimBot?.Cancel();
-        AimBot = null;
-    }
-
-    if(renderer.recoitTrace)
-    {
-        if(RCS==null || RCS.Status!= TaskStatus.Running)
-        {
-            cancelTokenSourceRCS = new CancellationTokenSource();
-            tokenRCS = cancelTokenSourceRCS.Token;
-            RCS = new Task(() => Functions.RCS(swed, client,renderer,tokenRCS));
-            RCS.Start();
-        }
-    }
-    else if (RCS!=null && RCS.Status==TaskStatus.Running && !renderer.recoitTrace)
-    {
-        cancelTokenSourceRCS?.Cancel();
-        RCS = null;
-    }
-
-    if (renderer.enableFovChanger)
-    {
-        if(FOV==null || FOV.Status != TaskStatus.Running)
-        {
-            cancelTokenSourceFOV = new CancellationTokenSource();
-            tokenFOV = cancelTokenSourceFOV.Token;
-            FOV = new Task(() => Functions.fovChanger(swed, client, renderer,tokenFOV));
-            FOV.Start();
-        }
-    }
-    else if(FOV!=null && FOV.Status == TaskStatus.Running && !renderer.enableFovChanger)
-    {
-        cancelTokenSourceFOV?.Cancel();
-        FOV = null;
-    }
-
-    if (renderer.autoPistol)
-    {
-        if(autoPistol==null || autoPistol.Status != TaskStatus.Running)
-        {
-            cancelTokenSourceAutoPistol = new CancellationTokenSource();
-            tokenAutoPistol = cancelTokenSourceAutoPistol.Token;
-            autoPistol = new Task( ()=>Functions.AutoPistolShoting(swed, client, tokenAutoPistol,renderer));
-            autoPistol.Start();
-        }
-    }
-    else if(autoPistol!=null && autoPistol.Status==TaskStatus.Running && !renderer.autoPistol)
-    {
-        cancelTokenSourceAutoPistol?.Cancel();
-        autoPistol = null;
-    }
-
-    if (renderer.antiAim)
-    {
-        if(AntiAim==null || AntiAim.Status != TaskStatus.Running)
-        {
-            cancelTokenSourceAntiAim = new CancellationTokenSource();
-            tokenAntiAim = cancelTokenSourceAntiAim.Token;
-            AntiAim = new Task( ()=> Functions.AntiAim(swed, client, tokenAntiAim, renderer));
-            AntiAim.Start();
-        }
-    }
-    else if(AntiAim != null && AntiAim.Status==TaskStatus.Running && !renderer.antiAim)
-    {
-        cancelTokenSourceAntiAim.Cancel();
-        AntiAim = null;
-    }
-
-    if (renderer.inspect)
-    {
-        if(InfInspect == null || InfInspect.Status != TaskStatus.Running)
-        {
-            cancelTokenSourceInspect = new CancellationTokenSource();
-            cancelTokenSourceInspect.Cancel();
-            InfInspect = new Task( ()=>Functions.InfiniteInspect(swed,client, tokenInspect, renderer) );
-            InfInspect.Start();
-        }
-    }
-    else if(InfInspect!=null && InfInspect.Status!=TaskStatus.Running && !renderer.inspect)
-    {
-        cancelTokenSourceInspect.Cancel();
-        InfInspect = null;
-    } 
-
-        Thread.Sleep(10); // Небольшая задержка, чтобы не нагружать процессор
+    Thread.Sleep(50); // Оптимизированная задержка
 }
 
-//imports
+// Вспомогательные методы
+void UpdateFeature(string featureName, Action action)
+{
+    var controller = features[featureName];
+    bool isEnabled = GetFeatureState(featureName);
+
+    if (isEnabled)
+    {
+        if (controller.ShouldStart())
+        {
+            controller.Start(action);
+        }
+    }
+    else if (controller.ShouldStop())
+    {
+        controller.Stop();
+    }
+}
+
+bool GetFeatureState(string featureName) => featureName switch
+{
+    "AntiFlash" => renderer.antiflash,
+    "Bhop" => renderer.bhop,
+    "Radar" => renderer.radar,
+    "Trigger" => renderer.trigger,
+    "BombTimer" => renderer.bombTimer,
+    "ESP" => renderer.enableEsp,
+    "AimBot" => renderer.aimbot,
+    "RCS" => renderer.recoitTrace,
+    "FOV" => renderer.enableFovChanger,
+    "AutoPistol" => renderer.autoPistol,
+    "AntiAim" => renderer.antiAim,
+    "Inspect" => renderer.inspect,
+    _ => false
+};
+
+bool NeedPointerUpdate(string featureName) => featureName switch
+{
+    "Radar" => renderer.radar,
+    "Trigger" => renderer.trigger,
+    "BombTimer" => renderer.bombTimer,
+    "ESP" => renderer.enableEsp,
+    "AimBot" => renderer.aimbot,
+    _ => false
+};
+
 [DllImport("user32.dll")]
 static extern short GetAsyncKeyState(int vKey);
+
+// Класс для управления функциями
+class FeatureController
+{
+    private CancellationTokenSource _cts;
+    private Task _task;
+
+    public CancellationToken Token => _cts?.Token ?? default;
+
+    public bool ShouldStart() => _task == null || _task.IsCompleted;
+
+    public bool ShouldStop() => _task != null && !_task.IsCompleted;
+
+    public void Start(Action action)
+    {
+        _cts?.Dispose();
+        _cts = new CancellationTokenSource();
+        _task = Task.Run(action, _cts.Token);
+    }
+
+    public void Stop()
+    {
+        _cts?.Cancel();
+        _task = null;
+    }
+}
+

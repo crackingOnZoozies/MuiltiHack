@@ -3,682 +3,560 @@ using ImGuiNET;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MuiltiHack
 {
     public class Renderer : Overlay
     {
-        //antiflash
-        public bool antiflash = false;
+        // Конфигурация состояний
+        public bool antiflash, radar, bhop, bombTimer, trigger, recoitTrace;
+        public bool autoBhop, legit, legitTrigger, autoTrigger, autoShoot;
+        public bool enableCustomSoundBombTimer, enableEsp, enableBones, enableName;
+        public bool enableVisibilityCheck, weaponEsp, box, drawLine, showTeam;
+        public bool showHelmet, showArmor, showIfHasKit, showIfDefusing, showAmmoInMag;
+        public bool aimbot, aimOnTeam, aimOnSpotted, useFov, aimOnClosest;
+        public bool followRecoil, legitAimBot, inVisFov, autoLock, aimKeySecond;
+        public bool enableFovChanger, ignorescoping, autoPistol, antiAim;
+        public bool stabilize, backOnly, ultraSpin, jitterMode, inspect, manual;
 
-        //radar
-        public bool radar = false;
+        // Параметры
+        public int cooldown, millisecondsDelay, maxRecoil, aimDelay;
+        public float yOffset, boneThickness, AutoSpotDist, maxEspDist;
+        public float FOV, soundVolume, FovChangerFOV, autoLockMaxDistance;
 
-        //bhop
-        public bool bhop = false;
-        public int cooldown = 0;
-        public bool autoBhop = false;
-        public bool legit = false;
-
-
-        public bool bombTimer = false;
-
-        //trigger bot
-        public bool trigger = false;
-        public bool legitTrigger = true;
-        public int millisecondsDelay = 0;
-        public bool autoTrigger = false;
-
-        //rgba
+        // Цвета
         private Vector4 redColor = new Vector4(1, 0, 0, 1);
         private Vector4 greenColor = new Vector4(0, 1, 0, 1);
-
-        //bomb stuff
-        public bool bombPlanted = false;
-        public int timeLeft = -1;
-        public float soundVolume = 0.5f;
-        public bool enableCustomSoundBombTimer = false;
-
-        //esp
-        private float yOffset = 20; // odfset between text
-        
-        //enteties copy
-        private ConcurrentQueue<Entity> entities = new ConcurrentQueue<Entity>();
-        private Entity localPlayer = new Entity();
-        private readonly object entityLock = new object();
-
-        //gui elements
-        public bool enableEsp = false;
-        private bool enableBones = false;
-        private bool enableName = false;
-        public bool enableVisibilityCheck = false;
-        private bool weaponEsp = false;
-        private bool box = false;
-        private bool drawLine = false;
-        public bool showTeam = false;
-        public bool showHelmet = false;
-        public bool showArmor = false;
-        public bool showIfHasKit = false;
-        public bool showIfDefusing = false;
-        public bool showAmmoInMag = false;
-
-        private float boneThickness = 4;
-        public float AutoSpotDist = 1000;
-        public float maxEspDist = 10000;
-
-
-        private Vector4 enemyColor = new Vector4(1, 0, 0, 1); // red
-        private Vector4 teamColor = new Vector4(0, 1, 0, 1); // green
-        private Vector4 barColor = new Vector4(0, 1, 0, 1);//green
-        private Vector4 nameColor = new Vector4(1, 1, 1, 1); //white
-        private Vector4 hiddenColor = new Vector4(0, 0, 0, 1); //black
+        private Vector4 enemyColor = new Vector4(1, 0, 0, 1);
+        private Vector4 teamColor = new Vector4(0, 1, 0, 1);
+        private Vector4 barColor = new Vector4(0, 1, 0, 1);
+        private Vector4 nameColor = new Vector4(1, 1, 1, 1);
+        private Vector4 hiddenColor = new Vector4(0, 0, 0, 1);
         private Vector4 BoneColor = new Vector4(1, 0, 2, 1);
-        private Vector4 armorColor = new Vector4(1,1,1,1); //white
+        private Vector4 armorColor = new Vector4(1, 1, 1, 1);
+        private Vector4 circleColor = new Vector4(1, 0, 1, 1);
 
-        //aimbot
-        public float FOV = 50; // in pixels
+        // Состояние игры
+        public bool bombPlanted;
+        public int timeLeft = -1;
+        public Vector2 screenSize = new Vector2(1920, 1080);
 
-        public bool aimbot = false;
-        public bool aimOnTeam = false;
-        public bool aimOnSpotted = true;
-        public bool useFov = false;
-        public bool aimOnClosest = false;
-        public bool followRecoil = false;
-        public int maxRecoil = -1;
-        public bool legitAimBot = false;
+        // Данные сущностей
+        private ConcurrentQueue<Entity> _entities = new ConcurrentQueue<Entity>();
+        private Entity _localPlayer = new Entity();
+        private readonly object _entityLock = new object();
+        private Random _random = new Random();
+        private string _soundsFolder = Path.Combine(AppContext.BaseDirectory, "EventSounds");
 
-        public bool autoLock = false;
-        public float autoLockMaxDistance = 0f;
+        // Кешированные делегаты для отрисовки
+        private Action<Entity>[] _renderActions;
+        private bool _espActive;
 
-        public bool autoShoot = false;
+        // Состояние окон
+        private bool _bombTimerWindowOpen = true;
 
-        public bool aimKeySecond = false;
+        
 
-        public int aimDelay = 10;
+        public Renderer()
+        {
+            
+            InitializeRenderActions();
+        }
 
-        public Vector4 circleColor = new Vector4(1, 0, 1, 1);
-
-        //draw list
-        ImDrawListPtr drawList;
-
-        //screen size
-        public Vector2 screenSize = new Vector2(1920, 1080);//default
-
-        //fov changer
-        public bool enableFovChanger = false;
-        public bool ignorescoping = false;
-        public float FovChangerFOV = 90;
-
-        //rcs
-        public bool recoitTrace = false;
-
-        //autopistol
-        public bool autoPistol = false;
-        //public bool autoPistolLegit = true; bullshit dont work
-
-        //anti aim
-        public bool antiAim = false;
-        public bool stabilize = true;
-        public bool backOnly = false;
-        public bool ultraSpin = false;
-        public bool jitterMode = false;
-
-        //inf inspect
-        public bool inspect = false;
-        public bool manual = false;
+        private void InitializeRenderActions()
+        {
+            _renderActions = new Action<Entity>[]
+            {
+                e => DrawHealthBarAndArmor(e),
+                e => DrawBox(e),
+                e => DrawLine(e),
+                e => DrawNameAndWeapon(e),
+                e => { if (enableBones && e.team != _localPlayer.team) DrawBones(e); }
+            };
+        }
 
         protected override void Render()
         {
             ImGui.Begin("multiCheat beta legit");
+            RenderAntiAimSection();
+            RenderFovChangerSection();
+            RenderAutoPistolSection();
+            RenderAntiFlashSection();
+            RenderRadarSection();
+            RenderBhopSection();
+            RenderTriggerBotSection();
+            RenderRecoilControlSection();
+            RenderBombTimerSection();
+            RenderAimbotSection();
+            RenderEspSection();
 
-            ImGui.SeparatorText("anti aim");
-            ImGui.Checkbox("on anti aim", ref antiAim);
-            if(ImGui.CollapsingHeader("antiAim modes"))
-            {
-                ImGui.Checkbox("stabilizer", ref stabilize);
-                ImGui.Checkbox("simple backwards aimbot", ref backOnly);
-                ImGui.Checkbox("retarded spin", ref ultraSpin);
-                ImGui.Checkbox("jitter", ref jitterMode);
-            }
-
-            //ImGui.SeparatorText("inspect shit(dont work)");
-            //ImGui.Checkbox("auto inspect", ref inspect);
-            if (inspect)
-            {
-                ImGui.Checkbox("manual", ref manual);
-            }
-
-            ImGui.SeparatorText("fovchanger");
-            ImGui.Checkbox("FOV changer", ref enableFovChanger);
-            if(enableFovChanger)
-            {
-                ImGui.Checkbox("ignore scope", ref ignorescoping);
-                ImGui.SliderFloat("FOV", ref FovChangerFOV, 0, 150);
-            }
-            if(!enableFovChanger && FovChangerFOV != 0)
-            {
-                FovChangerFOV = 0;
-            }
-
-            ImGui.SeparatorText("auto pistol");
-            ImGui.Checkbox("auto pistol switch", ref autoPistol);
-            
-
-            // Секция AntiFlash
-            ImGui.SeparatorText("antiflash Settings");
-            ImGui.Checkbox("Enable AntiFlash", ref antiflash);
-
-            // Секция Radar
-            ImGui.SeparatorText("radar Settings");
-            ImGui.Checkbox("Enable Radar", ref radar);
-
-            // Секция Bhop
-            ImGui.SeparatorText("bhop Settings");
-            ImGui.Checkbox("Enable Bhop", ref bhop);
-            if (bhop && ImGui.CollapsingHeader("bhop settings"))
-            {
-                ImGui.DragInt("Bhop Cooldown", ref cooldown);
-                ImGui.Checkbox("Auto Bhop", ref autoBhop);
-                ImGui.Checkbox("Legit (No Crouch)", ref legit);
-            }
-
-            //trigger bot
-            ImGui.SeparatorText("triggerbot Settings");
-
-            ImGui.Checkbox("Enable Trigger Bot", ref trigger);
-            if (trigger && ImGui.CollapsingHeader("trigger settings"))
-            {
-                ImGui.Checkbox("legit trigger", ref legitTrigger);
-                if(aimbot) ImGui.Checkbox("autoshoot", ref autoShoot);
-                else
-                {
-                    autoShoot = false;
-                }
-                if(autoShoot)
-                {
-                    ImGui.DragInt("autoshoot Delay", ref millisecondsDelay);
-                }
-                else
-                {
-                    ImGui.DragInt("Trigger Delay", ref millisecondsDelay);
-                    ImGui.Checkbox("Auto Trigger", ref autoTrigger);
-                }
-                
-            }
-
-            //rcs
-            ImGui.SeparatorText("recoil conatrol");
-            ImGui.Checkbox("rcs switch", ref recoitTrace);
-            if (recoitTrace)
-            {
-                ImGui.DragInt("max rcs bullets", ref maxRecoil);
-            }
-            else
-            {
-                maxRecoil = -1;
-            }
-
-                // Секция Bomb Timer
-                ImGui.SeparatorText("Bomb Timer Settings");
-            
-            ImGui.Checkbox("Enable Bomb Timer", ref bombTimer); // Checkbox для включения/выключения bombTimer
-
-            if (bombTimer)
-            {
-                //ImGui.Text("Bomb Timer Settings");
-                
-                ImGui.Checkbox("Use Custom Sound", ref enableCustomSoundBombTimer);
-                ImGui.SliderFloat("Sound Volume", ref soundVolume, 0.001f, 1);
-
-                // Окно таймера бомбы
-                BombTimer();
-            }
-
-            //aimbot
-            ImGui.SeparatorText("aimbot");
-            ImGui.Checkbox("aimbot in/off", ref aimbot);
-            if (aimbot)
-            {
-                //ImGui.Checkbox("legit Aim assist", ref legitAimBot);
-                ImGui.Checkbox("aim on closest by diatance", ref aimOnClosest);
-                ImGui.DragInt("aim delay", ref aimDelay);
-                ImGui.Checkbox("team aimbot", ref aimOnTeam);
-                ImGui.Checkbox("aim on spotted", ref aimOnSpotted);
-                ImGui.Checkbox("use mouse 6 for aiming", ref aimKeySecond);
-                ImGui.Checkbox("autoLock", ref autoLock);
-                if (autoLock)
-                {
-                    ImGui.SliderFloat("max distance for autoLock", ref autoLockMaxDistance, 0, 3000);
-                }
-
-                if (!aimOnClosest) ImGui.Checkbox("fov", ref useFov);
-
-                if (useFov)
-                {
-                    ImGui.SliderFloat("fov", ref FOV, 10, 300.0f);
-                    if (ImGui.CollapsingHeader("Fov circle color"))
-                    {
-                        ImGui.ColorPicker4("##fovcolor", ref circleColor);
-                    }
-                }
-            }
-
-            //esp menu
-            ImGui.SeparatorText("ESP");
-
-            ImGui.Checkbox("on", ref enableEsp);
-
-            if (enableEsp)
-            {
-                if(ImGui.CollapsingHeader("ESP settings"))
-                {
-                    
-                    ImGui.Checkbox("show team", ref showTeam);
-
-                    ImGui.Checkbox("show if defusing ", ref showIfDefusing);
-
-                    ImGui.Checkbox("show armor hp", ref showArmor);
-                    if(enableBones || box)
-                    {
-                        ImGui.Checkbox("show helmet", ref showHelmet);
-                    }
-
-                    if(showArmor && ImGui.CollapsingHeader("armor p bar color and helmet color"))
-                    {
-                        ImGui.ColorPicker4("##Bone color", ref armorColor);
-                    }
-                    //ImGui.SliderFloat("max distance for esp renderer", ref maxEspDist, 0, 10000);
-
-                    ImGui.Checkbox("show ammo in mag", ref showAmmoInMag);
-                    ImGui.Checkbox("box", ref box);
-
-                    ImGui.Checkbox("draw line", ref drawLine);
-
-                    ImGui.Checkbox("bones", ref enableBones);
-                    if (ImGui.CollapsingHeader("bone color"))
-                    {
-                        ImGui.ColorPicker4("##Bone color", ref BoneColor);
-
-                    }
-
-                    ImGui.Checkbox("show only spotted", ref enableVisibilityCheck);
-
-                    ImGui.Checkbox("enable name", ref enableName);
-                    if (enableName)
-                    {
-                        ImGui.SliderFloat("text y offset of name", ref yOffset, -100, 100);
-                        ImGui.Checkbox("weapon esp", ref weaponEsp);
-                    }
-
-                    //team color
-                    if (showTeam && ImGui.CollapsingHeader("team color"))
-                    {
-                        ImGui.ColorPicker4("##teamcolor", ref teamColor);
-                    }
-
-                    // enemy color
-                    if (ImGui.CollapsingHeader("enemy color"))
-                    {
-                        ImGui.ColorPicker4("##enemycolor", ref enemyColor);
-                    }
-
-                    //hp bar color
-                    if (ImGui.CollapsingHeader("hp bar color"))
-                    {
-                        ImGui.ColorPicker4("##barColor", ref barColor);
-                    }
-
-                    //name color
-                    if (ImGui.CollapsingHeader("name color") && enableName)
-                    {
-                        ImGui.ColorPicker4("##namecolor", ref nameColor);
-                    }
-
-
-                }
-
-
-            }
-            if (enableEsp || aimbot)
-            {
-                // draw esp overlay
-                DrawOverlay(screenSize);
-            }
-
-            drawList = ImGui.GetWindowDrawList();
-
-            foreach (Entity entity in entities)
-            {
-                //check if entity in screen
-                if (EntityOnSceen(entity))
-                {
-                    //draw methods (all)
-                    if(enableEsp) 
-                    {
-                        DrawHealthBarAndArmor(entity);
-                        ScopedCheckIfDefusingHasKitHasAmmoInMag(entity);
-                    }
-                    if (box) DrawBox(entity);
-                    if (drawLine) DrawLine(entity);
-                    DrawNameAndWeapon(entity);
-                    if (enableBones && entity.team != localPlayer.team) DrawBones(entity);
-
-                }
-
-            }
-            
-
-        }
-
-        // Укажите путь к папке EventSounds
-        string soundsFolder = Path.Combine(AppContext.BaseDirectory, "EventSounds");
-        
-        void BombTimer()
-        {
-            AudioPlayer audioPlayer = new AudioPlayer(soundsFolder);
-            ImGui.Begin("bob timer");
-            if (bombPlanted)
-            {
-                ImGui.TextColored(greenColor, "bombPlanted");
-                ImGui.Text($"second before BOOM: {timeLeft} ");
-
-                if (timeLeft == 10 && enableCustomSoundBombTimer)
-                {
-                    // Воспроизведение звука
-                    audioPlayer.PlaySound("bombSoundAt10sec.mp3", volume: soundVolume);
-                }
-                //"bombSoundAt10sec.mp3"
-                if (timeLeft == 5 && enableCustomSoundBombTimer)
-                {
-                    audioPlayer.PlaySound("5secBomb.mp3", volume: soundVolume);
-                }
-                if (timeLeft < 4)
-                {
-                    ImGui.Text("bomb botta blow");
-                }
-            }
-            else
-            {
-                ImGui.TextColored(redColor, "bomb not planted");
-            }
             ImGui.End();
         }
 
-        // ///////////////////////// esp
-        //check position
-        bool EntityOnSceen(Entity entity)
+        #region Section Rendering Methods
+        private void RenderAntiAimSection()
         {
-            if (entity.position2d.X > 0 && entity.position2d.X < screenSize.X && entity.position2d.Y > 0 && entity.position2d.Y < screenSize.Y)
+            if (ImGui.CollapsingHeader("Anti Aim"))
             {
-                return true;
+                ImGui.Checkbox("Enable Anti Aim", ref antiAim);
+                if (antiAim)
+                {
+                    ImGui.Checkbox("Stabilizer", ref stabilize);
+                    ImGui.Checkbox("Back Only", ref backOnly);
+                    ImGui.Checkbox("Ultra Spin", ref ultraSpin);
+                    ImGui.Checkbox("Jitter Mode", ref jitterMode);
+                }
             }
-            return false;
         }
 
-        // drawing ESP methods
+        private void RenderFovChangerSection()
+        {
+            if (ImGui.CollapsingHeader("FOV Changer"))
+            {
+                ImGui.Checkbox("Enable FOV Changer", ref enableFovChanger);
+                if (enableFovChanger)
+                {
+                    ImGui.Checkbox("Ignore Scope", ref ignorescoping);
+                    ImGui.SliderFloat("FOV Value", ref FovChangerFOV, 0, 150);
+                }
+            }
+        }
 
+        private void RenderAutoPistolSection()
+        {
+            if (ImGui.CollapsingHeader("Auto Pistol"))
+            {
+                ImGui.Checkbox("Enable Auto Pistol", ref autoPistol);
+            }
+        }
+
+        private void RenderAntiFlashSection()
+        {
+            if (ImGui.CollapsingHeader("AntiFlash"))
+            {
+                ImGui.Checkbox("Enable AntiFlash", ref antiflash);
+            }
+        }
+
+        private void RenderRadarSection()
+        {
+            if (ImGui.CollapsingHeader("Radar"))
+            {
+                ImGui.Checkbox("Enable Radar", ref radar);
+            }
+        }
+
+        private void RenderBhopSection()
+        {
+            if (ImGui.CollapsingHeader("Bhop"))
+            {
+                ImGui.Checkbox("Enable Bhop", ref bhop);
+                if (bhop)
+                {
+                    ImGui.DragInt("Cooldown", ref cooldown, 1, 0, 100);
+                    ImGui.Checkbox("Auto Bhop", ref autoBhop);
+                    ImGui.Checkbox("Legit Mode", ref legit);
+                }
+            }
+        }
+
+        private void RenderTriggerBotSection()
+        {
+            if (ImGui.CollapsingHeader("Trigger Bot"))
+            {
+                ImGui.Checkbox("Enable Trigger Bot", ref trigger);
+                if (trigger)
+                {
+                    ImGui.Checkbox("Legit Mode", ref legitTrigger);
+                    if (aimbot)
+                        ImGui.Checkbox("Auto Shoot", ref autoShoot);
+
+                    if (autoShoot)
+                        ImGui.DragInt("Auto Shoot Delay", ref millisecondsDelay, 1, 0, 500);
+                    else
+                        ImGui.DragInt("Trigger Delay", ref millisecondsDelay, 1, 0, 500);
+                }
+            }
+        }
+
+        private void RenderRecoilControlSection()
+        {
+            if (ImGui.CollapsingHeader("Recoil Control"))
+            {
+                ImGui.Checkbox("Enable RCS", ref recoitTrace);
+                if (recoitTrace)
+                    ImGui.DragInt("Max Bullets", ref maxRecoil, 1, -1, 50);
+            }
+        }
+
+        private void RenderBombTimerSection()
+        {
+            if (ImGui.CollapsingHeader("Bomb Timer"))
+            {
+                ImGui.Checkbox("Enable Bomb Timer", ref bombTimer);
+                if (bombTimer)
+                {
+                    RenderBombTimerWindow();
+                    ImGui.Checkbox("Custom Sound", ref enableCustomSoundBombTimer);
+                    ImGui.SliderFloat("Volume", ref soundVolume, 0.001f, 1);
+                }
+            }
+        }
+
+        private void RenderAimbotSection()
+        {
+            if (ImGui.CollapsingHeader("Aimbot"))
+            {
+                ImGui.Checkbox("Enable Aimbot", ref aimbot);
+                if (aimbot)
+                {
+                    ImGui.Checkbox("Closest Target", ref aimOnClosest);
+                    ImGui.DragInt("Aim Delay", ref aimDelay, 1, 0, 100);
+                    ImGui.Checkbox("Target Team", ref aimOnTeam);
+                    ImGui.Checkbox("Target Spotted", ref aimOnSpotted);
+                    ImGui.Checkbox("Mouse 6 Aim", ref aimKeySecond);
+                    ImGui.Checkbox("Auto Lock", ref autoLock);
+
+                    if (autoLock)
+                        ImGui.SliderFloat("Lock Distance", ref autoLockMaxDistance, 0, 3000);
+
+                    if (!aimOnClosest)
+                        ImGui.Checkbox("Use FOV", ref useFov);
+
+                    if (useFov)
+                    {
+                        ImGui.Checkbox("Epilepsy Mode", ref inVisFov);
+                        if (!inVisFov)
+                        {
+                            ImGui.SliderFloat("FOV Size", ref FOV, 10, 300);
+                            ImGui.ColorEdit4("FOV Color", ref circleColor);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void RenderEspSection()
+        {
+            if (ImGui.CollapsingHeader("ESP"))
+            {
+                ImGui.Checkbox("Enable ESP", ref enableEsp);
+                if (enableEsp)
+                {
+                    RenderEspSettings();
+                }
+            }
+
+            _espActive = enableEsp || aimbot;
+            if (_espActive)
+            {
+                DrawEspOverlay();
+            }
+        }
+        #endregion
+
+        private void RenderEspSettings()
+        {
+            ImGui.Checkbox("Show Team", ref showTeam);
+            ImGui.Checkbox("Show Defusing", ref showIfDefusing);
+            ImGui.Checkbox("Show Armor", ref showArmor);
+
+            if (enableBones || box)
+                ImGui.Checkbox("Show Helmet", ref showHelmet);
+
+            ImGui.Checkbox("Show Ammo", ref showAmmoInMag);
+            ImGui.Checkbox("Box ESP", ref box);
+            ImGui.Checkbox("Line ESP", ref drawLine);
+            ImGui.Checkbox("Bone ESP", ref enableBones);
+            ImGui.Checkbox("Visibility Check", ref enableVisibilityCheck);
+            ImGui.Checkbox("Name ESP", ref enableName);
+
+            if (enableName)
+            {
+                ImGui.SliderFloat("Y Offset", ref yOffset, -100, 100);
+                ImGui.Checkbox("Weapon ESP", ref weaponEsp);
+            }
+
+            if (showArmor) ImGui.ColorEdit4("Armor Color", ref armorColor);
+            if (showTeam) ImGui.ColorEdit4("Team Color", ref teamColor);
+            ImGui.ColorEdit4("Enemy Color", ref enemyColor);
+            ImGui.ColorEdit4("HP Color", ref barColor);
+            if (enableName) ImGui.ColorEdit4("Name Color", ref nameColor);
+            if (enableBones) ImGui.ColorEdit4("Bone Color", ref BoneColor);
+        }
+
+        private void RenderBombTimerWindow()
+        {
+            // Автоматически открываем окно при появлении бомбы
+            if (bombPlanted && !_bombTimerWindowOpen)
+                _bombTimerWindowOpen = true;
+
+            if (_bombTimerWindowOpen)
+            {
+                ImGui.Begin("Bomb Timer", ref _bombTimerWindowOpen);
+
+                if (bombPlanted)
+                {
+                    ImGui.TextColored(greenColor, "BOMB PLANTED");
+                    ImGui.Text($"Time left: {timeLeft}s");
+
+                    if (timeLeft <= 10 && timeLeft > 5 && enableCustomSoundBombTimer)
+                        PlayBombSound("bombSoundAt10sec.mp3");
+                    else if (timeLeft <= 5 && enableCustomSoundBombTimer)
+                        PlayBombSound("5secBomb.mp3");
+                    else if (timeLeft < 4)
+                        ImGui.Text("WARNING: Bomb about to explode!");
+                }
+                else
+                {
+                    ImGui.TextColored(redColor, "Bomb not planted");
+                }
+
+                ImGui.End();
+            }
+        }
+
+        private void PlayBombSound(string fileName)
+        {
+            try
+            {
+                var audioPlayer = new AudioPlayer(_soundsFolder);
+                audioPlayer.PlaySound(fileName, soundVolume);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error playing sound: {ex.Message}");
+            }
+        }
+
+        private void DrawEspOverlay()
+        {
+            ImGui.SetNextWindowSize(screenSize);
+            ImGui.SetNextWindowPos(Vector2.Zero);
+
+            ImGui.Begin("ESP Overlay",
+                ImGuiWindowFlags.NoDecoration |
+                ImGuiWindowFlags.NoBackground |
+                ImGuiWindowFlags.NoBringToFrontOnFocus |
+                ImGuiWindowFlags.NoMove |
+                ImGuiWindowFlags.NoInputs |
+                ImGuiWindowFlags.NoCollapse |
+                ImGuiWindowFlags.NoScrollbar |
+                ImGuiWindowFlags.NoScrollWithMouse);
+
+            if (aimbot && useFov)
+            {
+                UpdateFovCircleColor();
+                DrawFovCircle();
+            }
+
+            RenderVisibleEntities();
+            ImGui.End();
+        }
+
+        private void UpdateFovCircleColor()
+        {
+            if (inVisFov)
+            {
+                circleColor.X = (float)_random.NextDouble();
+                circleColor.Y = (float)_random.NextDouble();
+                circleColor.Z = (float)_random.NextDouble();
+            }
+        }
+
+        private void DrawFovCircle()
+        {
+            var localPlayer = GetLocalPlayer();
+            if (localPlayer == null) return;
+
+            var center = screenSize / 2;
+            var radius = localPlayer.zoomLevel > 0 ? FOV * localPlayer.zoomLevel : FOV;
+            ImGui.GetWindowDrawList().AddCircle(center, radius, ImGui.ColorConvertFloat4ToU32(circleColor));
+        }
+
+        private void RenderVisibleEntities()
+        {
+            foreach (var entity in _entities)
+            {
+                // Критически важная проверка на null
+                if (entity == null) continue;
+
+                if (!EntityOnScreen(entity)) continue;
+
+                foreach (var renderAction in _renderActions)
+                {
+                    try
+                    {
+                        renderAction(entity);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Rendering error: {ex.Message}");
+                    }
+                }
+            }
+        }
+
+        private bool EntityOnScreen(Entity entity)
+        {
+            return entity.position2d.X > 0 &&
+                   entity.position2d.X < screenSize.X &&
+                   entity.position2d.Y > 0 &&
+                   entity.position2d.Y < screenSize.Y;
+        }
+
+        #region ESP Rendering Methods
         private void DrawBox(Entity entity)
         {
-            // calc box height
-            float entityHeight = entity.position2d.Y - entity.viewPosition2D.Y;
-
-            //calc box dimensions
-            Vector2 rectTop = new Vector2(entity.viewPosition2D.X - entityHeight / 4, entity.viewPosition2D.Y);
-
-            Vector2 rectBottom = new Vector2(entity.viewPosition2D.X + entityHeight / 4, entity.viewPosition2D.Y + entityHeight);
-
-            Vector4 boxColor = localPlayer.team == entity.team ? teamColor : enemyColor;
-
-            if (enableVisibilityCheck && localPlayer.team != entity.team)
+            if(box && !enableBones)
             {
-                boxColor = entity.spotted ? boxColor : hiddenColor;
+                float height = entity.position2d.Y - entity.viewPosition2D.Y;
+                var color = GetEntityColor(entity, enemyColor, teamColor);
+
+                var topLeft = new Vector2(entity.viewPosition2D.X - height / 4, entity.viewPosition2D.Y);
+                var bottomRight = new Vector2(entity.viewPosition2D.X + height / 4, entity.viewPosition2D.Y + height);
+
+                ImGui.GetWindowDrawList().AddRect(topLeft, bottomRight, ImGui.ColorConvertFloat4ToU32(color));
+
+                var headCenter = new Vector2((topLeft.X + bottomRight.X) / 2, topLeft.Y);
+                float radius = height / 8.5f;
+                var headColor = showHelmet && entity.hasHelmet ? armorColor : color;
+                ImGui.GetWindowDrawList().AddCircle(headCenter, radius, ImGui.ColorConvertFloat4ToU32(headColor));
             }
-
-            // Draw rectangle
-            drawList.AddRect(rectTop, rectBottom, ImGui.ColorConvertFloat4ToU32(boxColor));
-
-
-
-            if (!enableBones)
-            {
-                // Calculate center of the top side of the rectangle
-                Vector2 circleCenter = new Vector2((rectTop.X + rectBottom.X) / 2, rectTop.Y);
-
-                // Calculate radius of the circle (half of the height of the rectangle)
-                float circleRadius = entityHeight / 8.5f;
-
-                // hidden check
-
-
-                // Draw circle
-                drawList.AddCircle(circleCenter, circleRadius, ImGui.ColorConvertFloat4ToU32(showHelmet && entity.hasHelmet? armorColor: boxColor));
-            }
-
+            
         }
 
         private void DrawLine(Entity entity)
         {
-            Vector4 lineColor = localPlayer.team == entity.team ? teamColor : enemyColor;
-            if (enableVisibilityCheck && localPlayer.team != entity.team)
+            if (drawLine)
             {
-                lineColor = entity.spotted ? lineColor : hiddenColor;
+                var color = GetEntityColor(entity, enemyColor, teamColor);
+                ImGui.GetWindowDrawList().AddLine(
+                    screenSize / 2,
+                    entity.position2d,
+                    ImGui.ColorConvertFloat4ToU32(color));
             }
-
-            //draw line
-            drawList.AddLine(new Vector2(screenSize.X / 2, screenSize.Y), entity.position2d, ImGui.ColorConvertFloat4ToU32(lineColor));
-
+            
         }
 
         private void DrawHealthBarAndArmor(Entity entity)
         {
-            //calc the hp bar height
-            float entityHeight = entity.position2d.Y - entity.viewPosition2D.Y;
+            float height = entity.position2d.Y - entity.viewPosition2D.Y;
+            float barWidth = 0.05f * (height / 2);
+            float healthHeight = height * (entity.health / 100f);
+            float armorHeight = height * (entity.armorHP / 100f);
 
-            //calc width
-            float boxLeft = entity.viewPosition2D.X - entityHeight / 4 + 0.01f;
-            float boxRight = entity.viewPosition2D.X + entityHeight / 4 + 0.01f;
+            // Health bar
+            var healthTop = new Vector2(entity.viewPosition2D.X - height / 4 - barWidth, entity.position2d.Y - healthHeight);
+            var healthBottom = new Vector2(entity.viewPosition2D.X - height / 4, entity.position2d.Y);
+            ImGui.GetWindowDrawList().AddRectFilled(healthTop, healthBottom, ImGui.ColorConvertFloat4ToU32(barColor));
 
-            //calc health bar width and height
-            float barPercentWidth = 0.05f; // 5% of box width
-            float barHeight = entityHeight * (entity.health / 100f);
-            float armorHeight = entityHeight * (entity.armorHP / 100f); // Расчёт высоты полоски брони
-
-            float barPixelWidth = barPercentWidth * (boxRight - boxLeft);
-
-            //calc health bar rectangle
-            Vector2 barTop = new Vector2(boxLeft - barPixelWidth, entity.position2d.Y - barHeight);
-            Vector2 barBottom = new Vector2(boxLeft, entity.position2d.Y);
-
-            //drawing health bar
-            drawList.AddRectFilled(barTop, barBottom, ImGui.ColorConvertFloat4ToU32(barColor));
-
-            //calc armor bar rectangle (переходим к левой стороне)
-            Vector2 armorTop = new Vector2(boxLeft - barPixelWidth - barPixelWidth, entity.position2d.Y - armorHeight); // Добавляем ещё один barPixelWidth для сдвига
-            Vector2 armorBottom = new Vector2(boxLeft - barPixelWidth, entity.position2d.Y);
-
-            //drawing armor bar
-            drawList.AddRectFilled(armorTop, armorBottom, ImGui.ColorConvertFloat4ToU32(armorColor)); // Белая полоска для брони
+            // Armor bar
+            if (showArmor)
+            {
+                var armorTop = new Vector2(healthTop.X - barWidth, entity.position2d.Y - armorHeight);
+                var armorBottom = new Vector2(healthTop.X, entity.position2d.Y);
+                ImGui.GetWindowDrawList().AddRectFilled(armorTop, armorBottom, ImGui.ColorConvertFloat4ToU32(armorColor));
+            }
         }
 
         private void DrawNameAndWeapon(Entity entity)
         {
-            if (enableName)
-            {
-                // Используем расстояние из объекта Entity
-                float distance = entity.distance;
+            if (!enableName) return;
 
-                // Масштабируем размер текста в зависимости от расстояния
-                float textScale = 0.8f / (distance * 0.1f); // Пример формулы масштабирования
-                textScale = Math.Clamp(textScale, 0.5f, 2.0f) * 1.5f; // Ограничиваем минимальный и максимальный размер
+            float scale = Math.Clamp(0.8f / (entity.distance * 0.1f), 0.5f, 2.0f) * 1.5f;
+            var namePos = new Vector2(entity.viewPosition2D.X, entity.position2d.Y - yOffset);
 
-                // Позиция для текста (имя)
-                Vector2 textLocation1 = new Vector2(entity.viewPosition2D.X, entity.position2d.Y - yOffset);
+            ImGui.SetWindowFontScale(scale);
+            ImGui.GetWindowDrawList().AddText(namePos, ImGui.ColorConvertFloat4ToU32(nameColor), entity.name);
 
-                // Устанавливаем размер текста
-                ImGui.SetWindowFontScale(textScale);
-
-                // Отрисовываем текст (имя)
-                drawList.AddText(textLocation1, ImGui.ColorConvertFloat4ToU32(nameColor), $"{entity.name}");
-
-                // Если включено отображение оружия
-            }
             if (weaponEsp)
             {
-                // Позиция для текста (оружие)
-                Vector2 textLocation2 = new Vector2(entity.viewPosition2D.X, entity.position2d.Y);
-
-                // Отрисовываем текст (оружие)
-                drawList.AddText(textLocation2, ImGui.ColorConvertFloat4ToU32(nameColor), $"{entity.currentWeaponName}");
+                var weaponPos = new Vector2(entity.viewPosition2D.X, entity.position2d.Y);
+                ImGui.GetWindowDrawList().AddText(weaponPos, ImGui.ColorConvertFloat4ToU32(nameColor), entity.currentWeaponName);
             }
 
-            // Возвращаем размер текста к значению по умолчанию
             ImGui.SetWindowFontScale(1.0f);
-
         }
-        private void ScopedCheckIfDefusingHasKitHasAmmoInMag(Entity entity)
+        private bool IsValidBone(List<Vector2> bones, int index)
         {
-            Vector2 textLocation = new Vector2(entity.viewPosition2D.X, entity.position2d.Y + yOffset);
-            float offset = 0;
-            if (entity.scoped)
-            {
-                drawList.AddText(textLocation, ImGui.ColorConvertFloat4ToU32(nameColor), $"SCOPPED");
-
-                // Проверка на состояние "Defusing"
-                if (entity.isDefusing)
-                {
-                    offset += 15;
-                    textLocation.Y += offset; // Увеличиваем Y-координату для новой строки
-                    drawList.AddText(textLocation, ImGui.ColorConvertFloat4ToU32(nameColor), $"Defusing");
-                    offset += 15;
-                }
-            }
-            // Проверка на состояние "Defusing"
-            else if (entity.isDefusing && showIfDefusing)
-            {
-                drawList.AddText(textLocation, ImGui.ColorConvertFloat4ToU32(nameColor), $"Defusing with " + (entity.hasKit ? "" : "no ") + "kits");
-                offset += 15;
-            }
-            if (showAmmoInMag)
-            {
-                ShowAmmoInMagFunc(entity, offset,textLocation);
-            }
-        }
-
-        void ShowAmmoInMagFunc(Entity entity, float offset, Vector2 textLocation)
-        {
-            textLocation.Y += offset;
-            drawList.AddText(textLocation, ImGui.ColorConvertFloat4ToU32(nameColor), $"{entity.ammoInMag} ammo ");
+            return bones != null &&
+                   index < bones.Count &&
+                   bones[index] != Vector2.Zero;
         }
 
         // bones draw methods
         private void DrawBones(Entity entity)
         {
-            // get ether team or enemy colorr depending on the team
+            // Получаем цвет в зависимости от команды
             uint uintColor = ImGui.ColorConvertFloat4ToU32(BoneColor);
-            uint uintColorHead = ImGui.ColorConvertFloat4ToU32(showHelmet && entity.hasHelmet? armorColor: BoneColor);
+            uint uintColorHead = ImGui.ColorConvertFloat4ToU32(showHelmet && entity.hasHelmet ? armorColor : BoneColor);
 
-            float currentBoneThickness;
+            float currentBoneThickness = _localPlayer.scoped ? boneThickness : boneThickness / entity.distance;
 
-            if (localPlayer.scoped)
+            // Проверка на наличие костей перед рисованием
+            if (entity.bones2d.Count > 12)
             {
-                currentBoneThickness = boneThickness;
+                //draw list
+                ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+                // Рисуем линии между костями
+                drawList.AddLine(entity.bones2d[1], entity.bones2d[2], uintColor, currentBoneThickness);
+                drawList.AddLine(entity.bones2d[1], entity.bones2d[3], uintColor, currentBoneThickness);
+                drawList.AddLine(entity.bones2d[1], entity.bones2d[6], uintColor, currentBoneThickness);
+                drawList.AddLine(entity.bones2d[3], entity.bones2d[4], uintColor, currentBoneThickness);
+                drawList.AddLine(entity.bones2d[6], entity.bones2d[7], uintColor, currentBoneThickness);
+                drawList.AddLine(entity.bones2d[4], entity.bones2d[5], uintColor, currentBoneThickness);
+                drawList.AddLine(entity.bones2d[7], entity.bones2d[8], uintColor, currentBoneThickness);
+                drawList.AddLine(entity.bones2d[1], entity.bones2d[0], uintColor, currentBoneThickness);
+                drawList.AddLine(entity.bones2d[0], entity.bones2d[9], uintColor, currentBoneThickness);
+                drawList.AddLine(entity.bones2d[0], entity.bones2d[11], uintColor, currentBoneThickness);
+                drawList.AddLine(entity.bones2d[9], entity.bones2d[10], uintColor, currentBoneThickness);
+                drawList.AddLine(entity.bones2d[11], entity.bones2d[12], uintColor, currentBoneThickness);
+
+                // Проверяем наличие головы перед рисованием круга
+                if (entity.bones2d.Count > 2)
+                {
+                    drawList.AddCircle(entity.bones2d[2], (entity.position2d.Y - entity.viewPosition2D.Y) / 8.5f, uintColorHead);
+                }
             }
-            else
-            {
-                currentBoneThickness = boneThickness / entity.distance;
-            }
-
-            //draw lines between bones
-            drawList.AddLine(entity.bones2d[1], entity.bones2d[2], uintColor, currentBoneThickness);
-
-            drawList.AddLine(entity.bones2d[1], entity.bones2d[3], uintColor, currentBoneThickness);
-
-            drawList.AddLine(entity.bones2d[1], entity.bones2d[6], uintColor, currentBoneThickness);
-
-            drawList.AddLine(entity.bones2d[3], entity.bones2d[4], uintColor, currentBoneThickness);
-
-            drawList.AddLine(entity.bones2d[6], entity.bones2d[7], uintColor, currentBoneThickness);
-
-            drawList.AddLine(entity.bones2d[4], entity.bones2d[5], uintColor, currentBoneThickness);
-
-            drawList.AddLine(entity.bones2d[7], entity.bones2d[8], uintColor, currentBoneThickness);
-
-            drawList.AddLine(entity.bones2d[1], entity.bones2d[0], uintColor, currentBoneThickness);
-
-            drawList.AddLine(entity.bones2d[0], entity.bones2d[9], uintColor, currentBoneThickness);
-
-            drawList.AddLine(entity.bones2d[0], entity.bones2d[11], uintColor, currentBoneThickness);
-
-            drawList.AddLine(entity.bones2d[9], entity.bones2d[10], uintColor, currentBoneThickness);
-
-            drawList.AddLine(entity.bones2d[11], entity.bones2d[12], uintColor, currentBoneThickness);
-
-            drawList.AddCircle(entity.bones2d[2], (entity.position2d.Y - entity.viewPosition2D.Y) / 8.5f, uintColorHead);
-
-
         }
 
 
-        //transfer entity methods
 
+
+        #endregion
+
+        private Vector4 GetEntityColor(Entity entity, Vector4 enemyCol, Vector4 teamCol)
+        {
+            var localPlayer = GetLocalPlayer();
+            if (localPlayer == null) return enemyCol;
+
+            bool isTeammate = localPlayer.team == entity.team;
+            bool visible = !enableVisibilityCheck || entity.spotted;
+
+            if (!visible) return hiddenColor;
+            return isTeammate ? teamCol : enemyCol;
+        }
+
+        #region Entity Management
         public void UpdateEntities(IEnumerable<Entity> newEntities)
         {
-            entities = new ConcurrentQueue<Entity>(newEntities);
-
+            _entities = new ConcurrentQueue<Entity>(newEntities);
         }
 
-        public void UpdateLocalPlayer(Entity newEntity)
+        public void UpdateLocalPlayer(Entity entity)
         {
-            lock (entityLock)
-            {
-                localPlayer = newEntity;
-            }
+            lock (_entityLock) _localPlayer = entity;
         }
 
         public Entity GetLocalPlayer()
         {
-            lock (entityLock)
-            {
-                return localPlayer;
-            }
+            lock (_entityLock) return _localPlayer;
         }
-
-        // draw overlay
-        void DrawOverlay(Vector2 screenSize)
-        {
-            ImGui.SetNextWindowSize(screenSize);
-            ImGui.SetNextWindowPos(new Vector2(0, 0));
-            ImGui.Begin("overlay", ImGuiWindowFlags.NoDecoration
-                | ImGuiWindowFlags.NoBackground
-                | ImGuiWindowFlags.NoBringToFrontOnFocus
-                | ImGuiWindowFlags.NoMove
-                | ImGuiWindowFlags.NoInputs
-                | ImGuiWindowFlags.NoCollapse
-                | ImGuiWindowFlags.NoScrollbar
-                | ImGuiWindowFlags.NoScrollWithMouse
-                );
-            if (aimbot && useFov)
-            {
-                if(localPlayer.zoomLevel == 0)
-                {
-                    ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-                    drawList.AddCircle(new Vector2(screenSize.X / 2, screenSize.Y / 2), FOV, ImGui.ColorConvertFloat4ToU32(circleColor));
-                }
-                else
-                {
-                    ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-                    drawList.AddCircle(new Vector2(screenSize.X / 2, screenSize.Y / 2), FOV*localPlayer.zoomLevel, ImGui.ColorConvertFloat4ToU32(circleColor));
-                }
-            }
-                
-        }
-        
-
+        #endregion
     }
 }
-

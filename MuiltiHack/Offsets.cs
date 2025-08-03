@@ -10,18 +10,18 @@ namespace MuiltiHack
     {
 
         //buttons.cs
-        public static int attack = 0x1AED530;
-        public static int jump = 0x1AEDA40;
-        public static int duck = 0x1AEDAD0;
-        public static int lookatweapon = 0x1D2BEB0;
+        public static int attack = 0x1AED5B0;
+        public static int jump = 0x1AEDAC0;
+        public static int duck = 0x1AEDB50;
+        public static int lookatweapon = 0x1D2BF30;
 
         //offsets.cs
-        public static int dwViewAngles = 0x1D2C740;
-        public static int dwLocalPlayerPawn = 0x1AF4B00;
-        public static int dwEntityList = 0x1CBE5B0;
+        public static int dwViewAngles = 0x1D2C7C0;
+        public static int dwLocalPlayerPawn = 0x1AF4B80;
+        public static int dwEntityList = 0x1CBE620;
 
-        public static int dwGameRules = 0x1D1D460;
-        public static int dwViewMatrix = 0x1D21980; // offset for circle
+        public static int dwGameRules = 0x1D1D4E0;
+        public static int dwViewMatrix = 0x1D21A00; // offset for circle
 
         //client.dll.cs
         public static int m_hPlayerPawn = 0x8FC;
