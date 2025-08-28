@@ -3,6 +3,7 @@ using ImGuiNET;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -275,11 +276,10 @@ namespace MuiltiHack
             ImGui.Checkbox("Visibility Check", ref enableVisibilityCheck);
             ImGui.Checkbox("Name ESP", ref enableName);
 
-            if (enableName)
-            {
-                ImGui.SliderFloat("Y Offset", ref yOffset, -100, 100);
-                ImGui.Checkbox("Weapon ESP", ref weaponEsp);
-            }
+            if(enableName)  ImGui.SliderFloat("Y Offset", ref yOffset, -100, 100);
+
+            ImGui.Checkbox("Weapon ESP", ref weaponEsp);
+
 
             if (showArmor) ImGui.ColorEdit4("Armor Color", ref armorColor);
             if (showTeam) ImGui.ColorEdit4("Team Color", ref teamColor);
@@ -412,7 +412,7 @@ namespace MuiltiHack
         #region ESP Rendering Methods
         private void DrawBox(Entity entity)
         {
-            if(box && !enableBones)
+            if(box )
             {
                 float height = entity.position2d.Y - entity.viewPosition2D.Y;
                 var color = GetEntityColor(entity, enemyColor, teamColor);
@@ -424,7 +424,7 @@ namespace MuiltiHack
 
                 var headCenter = new Vector2((topLeft.X + bottomRight.X) / 2, topLeft.Y);
                 float radius = height / 8.5f;
-                var headColor = showHelmet && entity.hasHelmet ? armorColor : color;
+                var headColor = showHelmet && entity.hasHelmet && !enableBones ? armorColor : color;
                 ImGui.GetWindowDrawList().AddCircle(headCenter, radius, ImGui.ColorConvertFloat4ToU32(headColor));
             }
             
@@ -466,21 +466,27 @@ namespace MuiltiHack
 
         private void DrawNameAndWeapon(Entity entity)
         {
-            if (!enableName) return;
+            if (enableName)
+            {
+                float scale = Math.Clamp(0.8f / (entity.distance * 0.1f), 0.5f, 2.0f) * 1.5f;
+                var namePos = new Vector2(entity.viewPosition2D.X, entity.position2d.Y - yOffset);
 
-            float scale = Math.Clamp(0.8f / (entity.distance * 0.1f), 0.5f, 2.0f) * 1.5f;
-            var namePos = new Vector2(entity.viewPosition2D.X, entity.position2d.Y - yOffset);
-
-            ImGui.SetWindowFontScale(scale);
-            ImGui.GetWindowDrawList().AddText(namePos, ImGui.ColorConvertFloat4ToU32(nameColor), entity.name);
+                ImGui.SetWindowFontScale(scale);
+                ImGui.GetWindowDrawList().AddText(namePos, ImGui.ColorConvertFloat4ToU32(nameColor), entity.name);
+            }
 
             if (weaponEsp)
             {
                 var weaponPos = new Vector2(entity.viewPosition2D.X, entity.position2d.Y);
                 ImGui.GetWindowDrawList().AddText(weaponPos, ImGui.ColorConvertFloat4ToU32(nameColor), entity.currentWeaponName);
             }
+            if (showAmmoInMag)
+            {
+                var ammoPos = new Vector2(entity.viewPosition2D.X, entity.position2d.Y - 2*yOffset);
+                ImGui.GetWindowDrawList().AddText(ammoPos, ImGui.ColorConvertFloat4ToU32(nameColor), $"{entity.ammoInMag}");
+            }
 
-            ImGui.SetWindowFontScale(1.0f);
+            if (enableName || weaponEsp) ImGui.SetWindowFontScale(1.0f);
         }
         private bool IsValidBone(List<Vector2> bones, int index)
         {
