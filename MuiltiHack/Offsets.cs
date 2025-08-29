@@ -34,7 +34,7 @@ namespace MuiltiHack
         public static int m_modelState = 0x190; // head
         public static int m_pGameSceneNode = 0x330;
 
-        public static int m_entitySpottedState = 0x2838;
+        public static int m_entitySpottedState = 0x2710;
         public static int m_bSpotted = 0x8;
 
         public static int m_iIDEntIndex = 0x3EDC;
@@ -43,7 +43,7 @@ namespace MuiltiHack
 
         public static int m_aimPunchAngle = 0x180C;
         public static int m_iShotsFired = 0x2864;
-        public static int m_flFlashBangTime = 0x1644;
+        public static int m_flFlashBangTime = 0x160C;
 
         public static int m_fFlags = 0x3F8;
 

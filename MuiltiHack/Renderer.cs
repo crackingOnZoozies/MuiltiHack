@@ -276,7 +276,7 @@ namespace MuiltiHack
             ImGui.Checkbox("Visibility Check", ref enableVisibilityCheck);
             ImGui.Checkbox("Name ESP", ref enableName);
 
-            if(enableName)  ImGui.SliderFloat("Y Offset", ref yOffset, -100, 100);
+            ImGui.SliderFloat("Y Offset of text", ref yOffset, -100, 100);
 
             ImGui.Checkbox("Weapon ESP", ref weaponEsp);
 
@@ -422,10 +422,14 @@ namespace MuiltiHack
 
                 ImGui.GetWindowDrawList().AddRect(topLeft, bottomRight, ImGui.ColorConvertFloat4ToU32(color));
 
-                var headCenter = new Vector2((topLeft.X + bottomRight.X) / 2, topLeft.Y);
-                float radius = height / 8.5f;
-                var headColor = showHelmet && entity.hasHelmet && !enableBones ? armorColor : color;
-                ImGui.GetWindowDrawList().AddCircle(headCenter, radius, ImGui.ColorConvertFloat4ToU32(headColor));
+                if(!enableBones )
+                {
+                    var headCenter = new Vector2((topLeft.X + bottomRight.X) / 2, topLeft.Y);
+                    float radius = height / 8.5f;
+                    var headColor = showHelmet && entity.hasHelmet && !enableBones ? armorColor : color;
+                    ImGui.GetWindowDrawList().AddCircle(headCenter, radius, ImGui.ColorConvertFloat4ToU32(headColor));
+                }
+                
             }
             
         }

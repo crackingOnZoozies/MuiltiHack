@@ -149,7 +149,7 @@ namespace MuiltiHack
             }
         }
 
-        public static void Trigger(Swed swed, IntPtr client, IntPtr entityList, IntPtr localPlayerPawn, CancellationToken token, int aimdelay, bool triggerShoot, bool autoShootAimbot, bool legit, bool shootAtTeam)
+        public static void Trigger(Swed swed, IntPtr client, IntPtr entityList, IntPtr localPlayerPawn, CancellationToken token, int aimdelay, bool triggerShoot, bool autoShootAimbot, bool legit, bool shootAtTeam, bool enableAimbot)
         {
 
             //get our team and crosshair id
@@ -189,7 +189,7 @@ namespace MuiltiHack
                     }
                 }
             }
-            else if (autoShootAimbot)
+            else if (autoShootAimbot || enableAimbot)
             {
                 if (GetAsyncKeyState(HOTKEY) < 0)
                 {
