@@ -23,11 +23,14 @@ namespace MuiltiHack
         public bool followRecoil, legitAimBot, inVisFov, autoLock, aimKeySecond;
         public bool enableFovChanger, ignorescoping, autoPistol, antiAim;
         public bool stabilize, backOnly, ultraSpin, jitterMode, inspect, manual;
+        public bool autoScopeTrigger, legitScopeTrigger;
 
         // Параметры
-        public int cooldown, millisecondsDelay, maxRecoil, aimDelay;
+        public int cooldown, millisecondsDelay, aimDelay;
+        public int maxRecoil = -1;
         public float yOffset, boneThickness, AutoSpotDist, maxEspDist;
-        public float FOV, soundVolume, FovChangerFOV, autoLockMaxDistance;
+        public float  soundVolume, FovChangerFOV, autoLockMaxDistance;
+        public float FOV = 1;
 
         // Цвета
         private Vector4 redColor = new Vector4(1, 0, 0, 1);
@@ -172,14 +175,27 @@ namespace MuiltiHack
                 ImGui.Checkbox("Enable Trigger Bot", ref trigger);
                 if (trigger)
                 {
-                    ImGui.Checkbox("Legit Mode", ref legitTrigger);
+                    ImGui.Checkbox("auto scope", ref autoScopeTrigger);
+                    if (autoScopeTrigger)
+                    {
+                        ImGui.Checkbox("legit scopping in trigger", ref legitScopeTrigger);
+                    }
+                    ImGui.Checkbox("Legit shooting", ref legitTrigger);
                     if (aimbot)
                         ImGui.Checkbox("Auto Shoot", ref autoShoot);
 
                     if (autoShoot)
+                    { 
                         ImGui.DragInt("Auto Shoot Delay", ref millisecondsDelay, 1, 0, 500);
+                        autoTrigger = false;
+                    }
+
                     else
-                        ImGui.DragInt("Trigger Delay", ref millisecondsDelay, 1, 0, 500);
+                    {
+                        ImGui.Checkbox("auto trigger", ref autoTrigger);
+
+                        if(!autoShoot)   ImGui.DragInt("Trigger Delay", ref millisecondsDelay, 1, 0, 500);
+                    }
                 }
             }
         }
@@ -233,7 +249,7 @@ namespace MuiltiHack
                         ImGui.Checkbox("Epilepsy Mode", ref inVisFov);
                         if (!inVisFov)
                         {
-                            ImGui.SliderFloat("FOV Size", ref FOV, 10, 300);
+                            ImGui.SliderFloat("FOV Size", ref FOV, 1, 500);
                             ImGui.ColorEdit4("FOV Color", ref circleColor);
                         }
                     }
@@ -514,27 +530,52 @@ namespace MuiltiHack
                 //draw list
                 ImDrawListPtr drawList = ImGui.GetWindowDrawList();
                 // Рисуем линии между костями
+
+                // Шея -> Правое плечо
                 drawList.AddLine(entity.bones2d[1], entity.bones2d[2], uintColor, currentBoneThickness);
+
+                // Шея -> Левое плечо
                 drawList.AddLine(entity.bones2d[1], entity.bones2d[3], uintColor, currentBoneThickness);
+
+                // Шея -> Таз/Торс (центр тела)
                 drawList.AddLine(entity.bones2d[1], entity.bones2d[6], uintColor, currentBoneThickness);
+
+                // Левое плечо -> Левый локоть
                 drawList.AddLine(entity.bones2d[3], entity.bones2d[4], uintColor, currentBoneThickness);
+
+                // Таз/Торс -> Правое бедро
                 drawList.AddLine(entity.bones2d[6], entity.bones2d[7], uintColor, currentBoneThickness);
+
+                // Левый локоть -> Левая кисть
                 drawList.AddLine(entity.bones2d[4], entity.bones2d[5], uintColor, currentBoneThickness);
+
+                // Правое бедро -> Правое колено
                 drawList.AddLine(entity.bones2d[7], entity.bones2d[8], uintColor, currentBoneThickness);
+
+                // Шея -> Голова
                 drawList.AddLine(entity.bones2d[1], entity.bones2d[0], uintColor, currentBoneThickness);
+
+                // Голова -> Дополнительная точка (возможно для ушей/висков)
                 drawList.AddLine(entity.bones2d[0], entity.bones2d[9], uintColor, currentBoneThickness);
+
+                // Голова -> Дополнительная точка (возможно для ушей/висков)
                 drawList.AddLine(entity.bones2d[0], entity.bones2d[11], uintColor, currentBoneThickness);
+
+                // Дополнительная точка головы -> Дополнительная точка (челюсть/подбородок)
                 drawList.AddLine(entity.bones2d[9], entity.bones2d[10], uintColor, currentBoneThickness);
+
+                // Дополнительная точка головы -> Дополнительная точка (челюсть/подбородок)
                 drawList.AddLine(entity.bones2d[11], entity.bones2d[12], uintColor, currentBoneThickness);
 
                 // Проверяем наличие головы перед рисованием круга
                 if (entity.bones2d.Count > 2)
                 {
+                    // Рисуем круг вокруг головы (кость с индексом 2 обычно является головой)
                     drawList.AddCircle(entity.bones2d[2], (entity.position2d.Y - entity.viewPosition2D.Y) / 8.5f, uintColorHead);
                 }
             }
         }
-
+        
 
 
 

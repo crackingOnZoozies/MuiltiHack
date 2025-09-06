@@ -64,8 +64,7 @@ while (true)
 
     UpdateFeature("Trigger", () => Functions.Trigger(
         swed, client, entityList, localPlayerPawn, features["Trigger"].Token,
-        renderer.millisecondsDelay, renderer.autoTrigger, renderer.autoShoot,
-        renderer.legitTrigger, renderer.aimOnTeam, renderer.aimbot
+        renderer
     ));
 
     if (NeedPointerUpdate("BombTimer"))

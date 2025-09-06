@@ -21,10 +21,13 @@ namespace MuiltiHack
         const int HOTKEY = 0x06; //mouse5 = 0x06 alt = 0x12
 
         const int vKey = 0x12; // mouse 5 12-alt
+        const int R_MouseButton = 0x02;
 
-        //mouse events consts
+        // Константы событий мыши
         const uint L_MouseDown = 0x02;
         const uint L_MouseUp = 0x04;
+        const uint R_MouseDown = 0x08; // Правая кнопка вниз
+        const uint R_MouseUp = 0x10;   // Правая кнопка вверх
 
         //player states
         const uint standing = 65665;
@@ -149,13 +152,20 @@ namespace MuiltiHack
             }
         }
 
-        public static void Trigger(Swed swed, IntPtr client, IntPtr entityList, IntPtr localPlayerPawn, CancellationToken token, int aimdelay, bool triggerShoot, bool autoShootAimbot, bool legit, bool shootAtTeam, bool enableAimbot)
+        public static void Trigger(Swed swed, IntPtr client, IntPtr entityList, IntPtr localPlayerPawn, CancellationToken token, Renderer renderer)
         {
 
             //get our team and crosshair id
             int team = swed.ReadInt(localPlayerPawn, Offsets.m_iTeamNum);
             int entIndex = swed.ReadInt(localPlayerPawn, Offsets.m_iIDEntIndex);
 
+            //get if weapon is cabable of scopping
+            IntPtr localPlyer = swed.ReadPointer(client, Offsets.dwLocalPlayerPawn);
+            IntPtr currentWeapon = swed.ReadPointer(localPlyer, Offsets.m_pClippingWeapon);
+
+            // get item defenition index
+            short weponDefenitionIndex = swed.ReadShort(currentWeapon, Offsets.m_AttributeManager + Offsets.m_Item + Offsets.m_iItemDefinitionIndex);
+            
             if (entIndex != -1)
             {
                 //get controller from entity from entity index
@@ -167,14 +177,17 @@ namespace MuiltiHack
                 //get the team
                 int entityTeam = swed.ReadInt(currentPawn, Offsets.m_iTeamNum);
 
-                if (team != entityTeam || (team == entityTeam && shootAtTeam))
+
+                if (team != entityTeam)
                 {
                     //check for hotkey
-                    if (GetAsyncKeyState(HOTKEY) < 0 || triggerShoot)
+                    if (GetAsyncKeyState(HOTKEY) < 0 || renderer.autoTrigger)
                     {
-                        Thread.Sleep(aimdelay);
+                        Thread.Sleep(renderer.millisecondsDelay);
 
-                        if (legit)
+                        if (renderer.autoScopeTrigger && IsSniper(weponDefenitionIndex)) scope(renderer.legitScopeTrigger, swed, client);
+
+                        if (renderer.legitTrigger)
                         {
                             shoot();
                         }
@@ -189,12 +202,14 @@ namespace MuiltiHack
                     }
                 }
             }
-            else if (autoShootAimbot || enableAimbot)
+            else if (renderer.aimbot || renderer.autoShoot)
             {
                 if (GetAsyncKeyState(HOTKEY) < 0)
                 {
-                    Thread.Sleep(aimdelay);
-                    if (legit)
+                    if (IsSniper(weponDefenitionIndex)) scope(renderer.legitScopeTrigger, swed, client);
+
+                    Thread.Sleep(renderer.millisecondsDelay);
+                    if (renderer.legitTrigger)
                     {
                         shoot();
                     }
@@ -786,9 +801,27 @@ namespace MuiltiHack
         public static void shoot()
         {
             mouse_event(L_MouseDown, 0, 0, 0, UIntPtr.Zero);
-            Thread.Sleep(10);
+            Thread.Sleep(1);
             mouse_event(L_MouseUp, 0, 0, 0, UIntPtr.Zero);
-            Thread.Sleep(10);
+            Thread.Sleep(1);
+        }
+        public static void scope(bool legit, Swed swed, IntPtr client)
+        {
+            if(legit)
+            {
+                mouse_event(R_MouseDown, 0, 0, 0, UIntPtr.Zero);
+                Thread.Sleep(1);
+                mouse_event(R_MouseUp, 0, 0, 0, UIntPtr.Zero);
+                Thread.Sleep(1);
+            }
+            else
+            {
+                swed.WriteInt(client, Offsets.attack2, 65537); // + scope
+                Thread.Sleep(1);
+                swed.WriteInt(client, Offsets.attack2, 16777472); // - scope
+                Thread.Sleep(1);
+            }
+            
         }
 
         //functions
@@ -809,10 +842,10 @@ namespace MuiltiHack
 
         public static bool IsSniper(short weponDefenitionIndex)
         {
-            int[] ints = {9,11,38,40,};
+            int[] ints = {9,11,38,40};
             foreach (var item in ints)
             {
-                if (item == weponDefenitionIndex && GetAsyncKeyState(0x01) < 0)
+                if (item == weponDefenitionIndex)
                 {
                     return true;
                 }
