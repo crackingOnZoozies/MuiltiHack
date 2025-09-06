@@ -159,12 +159,7 @@ namespace MuiltiHack
             int team = swed.ReadInt(localPlayerPawn, Offsets.m_iTeamNum);
             int entIndex = swed.ReadInt(localPlayerPawn, Offsets.m_iIDEntIndex);
 
-            //get if weapon is cabable of scopping
-            IntPtr localPlyer = swed.ReadPointer(client, Offsets.dwLocalPlayerPawn);
-            IntPtr currentWeapon = swed.ReadPointer(localPlyer, Offsets.m_pClippingWeapon);
-
-            // get item defenition index
-            short weponDefenitionIndex = swed.ReadShort(currentWeapon, Offsets.m_AttributeManager + Offsets.m_Item + Offsets.m_iItemDefinitionIndex);
+            
             
             if (entIndex != -1)
             {
@@ -185,7 +180,8 @@ namespace MuiltiHack
                     {
                         Thread.Sleep(renderer.millisecondsDelay);
 
-                        if (renderer.autoScopeTrigger && IsSniper(weponDefenitionIndex)) scope(renderer.legitScopeTrigger, swed, client);
+                        if(renderer.autoScopeTrigger)
+                            scope(renderer.legitScopeTrigger, swed, client);
 
                         if (renderer.legitTrigger)
                         {
@@ -206,7 +202,8 @@ namespace MuiltiHack
             {
                 if (GetAsyncKeyState(HOTKEY) < 0)
                 {
-                    if (IsSniper(weponDefenitionIndex)) scope(renderer.legitScopeTrigger, swed, client);
+                    if (renderer.autoScopeTrigger)
+                        scope(renderer.legitScopeTrigger, swed, client);
 
                     Thread.Sleep(renderer.millisecondsDelay);
                     if (renderer.legitTrigger)
@@ -807,14 +804,23 @@ namespace MuiltiHack
         }
         public static void scope(bool legit, Swed swed, IntPtr client)
         {
-            if(legit)
+            //get if weapon is cabable of scopping
+            IntPtr localPlyer = swed.ReadPointer(client, Offsets.dwLocalPlayerPawn);
+            IntPtr currentWeapon = swed.ReadPointer(localPlyer, Offsets.m_pClippingWeapon);
+            
+            // get item defenition index
+            short weponDefenitionIndex = swed.ReadShort(currentWeapon, Offsets.m_AttributeManager + Offsets.m_Item + Offsets.m_iItemDefinitionIndex);
+
+            bool flg = !IsSniper(weponDefenitionIndex) && swed.ReadBool(swed.ReadPointer(client,Offsets.dwLocalPlayerPawn), Offsets.m_bIsScoped);
+
+            if (legit && !flg)
             {
                 mouse_event(R_MouseDown, 0, 0, 0, UIntPtr.Zero);
                 Thread.Sleep(1);
                 mouse_event(R_MouseUp, 0, 0, 0, UIntPtr.Zero);
                 Thread.Sleep(1);
             }
-            else
+            else if(!flg)
             {
                 swed.WriteInt(client, Offsets.attack2, 65537); // + scope
                 Thread.Sleep(1);

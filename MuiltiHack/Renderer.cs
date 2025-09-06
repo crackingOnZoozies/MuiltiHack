@@ -390,7 +390,7 @@ namespace MuiltiHack
             if (localPlayer == null) return;
 
             var center = screenSize / 2;
-            var radius = localPlayer.zoomLevel > 0 ? FOV * localPlayer.zoomLevel : FOV;
+            var radius =  FOV;
             ImGui.GetWindowDrawList().AddCircle(center, radius, ImGui.ColorConvertFloat4ToU32(circleColor));
         }
 
