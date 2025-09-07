@@ -222,6 +222,7 @@ namespace MuiltiHack
 
         public static void BombTimer(Swed swed, IntPtr GameRules, CancellationToken token, Renderer renderer)
         {
+
             bool bBombPlanted = false;
 
             if (GameRules != IntPtr.Zero)
@@ -229,7 +230,7 @@ namespace MuiltiHack
                 bBombPlanted = swed.ReadBool(GameRules, Offsets.m_bBombPlanted);
                 if (bBombPlanted)
                 {
-                    for (int i = 0; i < 40; i++)
+                    for (int i = 0; i <= 40; i++)
                     {
                         bBombPlanted = swed.ReadBool(GameRules, Offsets.m_bBombPlanted);
                         if (!bBombPlanted)
@@ -244,10 +245,15 @@ namespace MuiltiHack
                 }
                 else
                 {
+                    
                     renderer.timeLeft = -1;
                     renderer.bombPlanted = false;
                     Thread.Sleep(5);
                 }
+            }
+            else
+            {
+                Console.WriteLine(0);
             }
         }
 
@@ -811,16 +817,16 @@ namespace MuiltiHack
             // get item defenition index
             short weponDefenitionIndex = swed.ReadShort(currentWeapon, Offsets.m_AttributeManager + Offsets.m_Item + Offsets.m_iItemDefinitionIndex);
 
-            bool flg = !IsSniper(weponDefenitionIndex) && swed.ReadBool(swed.ReadPointer(client,Offsets.dwLocalPlayerPawn), Offsets.m_bIsScoped);
+            bool flg = IsSniper(weponDefenitionIndex) && !swed.ReadBool(swed.ReadPointer(client,Offsets.dwLocalPlayerPawn), Offsets.m_bIsScoped);
 
-            if (legit && !flg)
+            if (legit && flg)
             {
                 mouse_event(R_MouseDown, 0, 0, 0, UIntPtr.Zero);
                 Thread.Sleep(1);
                 mouse_event(R_MouseUp, 0, 0, 0, UIntPtr.Zero);
                 Thread.Sleep(1);
             }
-            else if(!flg)
+            else if(flg)
             {
                 swed.WriteInt(client, Offsets.attack2, 65537); // + scope
                 Thread.Sleep(1);
@@ -889,47 +895,3 @@ namespace MuiltiHack
     }
 }
 
-public class AudioPlayer
-{
-    private string soundsFolder;
-
-    public AudioPlayer(string soundsFolderPath)
-    {
-        // Убедимся, что папка существует
-        if (!Directory.Exists(soundsFolderPath))
-        {
-            throw new DirectoryNotFoundException($"Папка {soundsFolderPath} не найдена!");
-        }
-
-        soundsFolder = soundsFolderPath;
-    }
-
-    public void PlaySound(string fileName, float volume = 1.0f)
-    {
-        string filePath = Path.Combine(soundsFolder, fileName);
-
-        // Проверяем, существует ли файл
-        if (!File.Exists(filePath))
-        {
-            Console.WriteLine($"Файл {fileName} не найден в папке {soundsFolder}!");
-            return;
-        }
-
-        // Воспроизведение MP3
-        using (var mp3Reader = new Mp3FileReader(filePath))
-        using (var waveOut = new WaveOutEvent())
-        {
-            // Устанавливаем громкость
-            waveOut.Volume = volume;
-
-            waveOut.Init(mp3Reader);
-            waveOut.Play();
-
-            // Ожидание завершения воспроизведения
-            while (waveOut.PlaybackState == PlaybackState.Playing)
-            {
-                System.Threading.Thread.Sleep(100);
-            }
-        }
-    }
-}

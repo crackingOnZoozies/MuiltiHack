@@ -22,6 +22,7 @@ namespace MuiltiHack
         public static int dwEntityList = 0x1D15E08;
 
         public static int dwGameRules = 0x1E2EF78;
+        public static int dwPlantedC4 = 0x1E37FD0;
         public static int dwViewMatrix = 0x1E32F70; // offset for circle
 
         //client.dll.cs

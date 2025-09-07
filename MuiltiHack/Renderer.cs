@@ -1,9 +1,9 @@
 ﻿using ClickableTransparentOverlay;
 using ImGuiNET;
+using NAudio.Wave;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -29,7 +29,7 @@ namespace MuiltiHack
         public int cooldown, millisecondsDelay, aimDelay;
         public int maxRecoil = -1;
         public float yOffset, boneThickness, AutoSpotDist, maxEspDist;
-        public float  soundVolume, FovChangerFOV, autoLockMaxDistance;
+        public float soundVolume, FovChangerFOV, autoLockMaxDistance;
         public float FOV = 1;
 
         // Цвета
@@ -47,6 +47,7 @@ namespace MuiltiHack
         // Состояние игры
         public bool bombPlanted;
         public int timeLeft = -1;
+        public int bombSite = -1;
         public Vector2 screenSize = new Vector2(1920, 1080);
 
         // Данные сущностей
@@ -62,12 +63,10 @@ namespace MuiltiHack
 
         // Состояние окон
         private bool _bombTimerWindowOpen = true;
-
-        
+        private bool _mainWindowOpen = true;
 
         public Renderer()
         {
-            
             InitializeRenderActions();
         }
 
@@ -85,20 +84,48 @@ namespace MuiltiHack
 
         protected override void Render()
         {
-            ImGui.Begin("multiCheat beta legit");
-            RenderAntiAimSection();
-            RenderFovChangerSection();
-            RenderAutoPistolSection();
-            RenderAntiFlashSection();
-            RenderRadarSection();
-            RenderBhopSection();
-            RenderTriggerBotSection();
-            RenderRecoilControlSection();
-            RenderBombTimerSection();
-            RenderAimbotSection();
-            RenderEspSection();
+            // Рендерим основное окно настроек
+            if (_mainWindowOpen)
+            {
+                ImGui.Begin("multiCheat beta legit", ref _mainWindowOpen);
+                RenderAntiAimSection();
+                RenderFovChangerSection();
+                RenderAutoPistolSection();
+                RenderAntiFlashSection();
+                RenderRadarSection();
+                RenderBhopSection();
+                RenderTriggerBotSection();
+                RenderRecoilControlSection();
+                RenderBombTimerSection();
+                RenderAimbotSection();
+                RenderEspSection();
+                ImGui.End();
+            }
+            else
+            {
+                // Если основное окно закрыто, показываем маленькую кнопку для его открытия
+                ImGui.SetNextWindowSize(new Vector2(100, 40));
+                ImGui.SetNextWindowPos(new Vector2(10, 10));
+                ImGui.Begin("Show Menu", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove);
+                if (ImGui.Button("Menu"))
+                {
+                    _mainWindowOpen = true;
+                }
+                ImGui.End();
+            }
 
-            ImGui.End();
+            // Всегда рендерим окно бомб-таймера, если оно открыто и включена функция
+            if (bombTimer && _bombTimerWindowOpen)
+            {
+                RenderBombTimerWindow();
+            }
+
+            // Рендерим ESP оверлей, если нужно
+            _espActive = enableEsp || aimbot;
+            if (_espActive)
+            {
+                DrawEspOverlay();
+            }
         }
 
         #region Section Rendering Methods
@@ -185,7 +212,7 @@ namespace MuiltiHack
                         ImGui.Checkbox("Auto Shoot", ref autoShoot);
 
                     if (autoShoot)
-                    { 
+                    {
                         ImGui.DragInt("Auto Shoot Delay", ref millisecondsDelay, 1, 0, 500);
                         autoTrigger = false;
                     }
@@ -194,7 +221,7 @@ namespace MuiltiHack
                     {
                         ImGui.Checkbox("auto trigger", ref autoTrigger);
 
-                        if(!autoShoot)   ImGui.DragInt("Trigger Delay", ref millisecondsDelay, 1, 0, 500);
+                        if (!autoShoot) ImGui.DragInt("Trigger Delay", ref millisecondsDelay, 1, 0, 500);
                     }
                 }
             }
@@ -217,7 +244,7 @@ namespace MuiltiHack
                 ImGui.Checkbox("Enable Bomb Timer", ref bombTimer);
                 if (bombTimer)
                 {
-                    RenderBombTimerWindow();
+                    ImGui.Checkbox("Show Bomb Timer Window", ref _bombTimerWindowOpen);
                     ImGui.Checkbox("Custom Sound", ref enableCustomSoundBombTimer);
                     ImGui.SliderFloat("Volume", ref soundVolume, 0.001f, 1);
                 }
@@ -296,7 +323,6 @@ namespace MuiltiHack
 
             ImGui.Checkbox("Weapon ESP", ref weaponEsp);
 
-
             if (showArmor) ImGui.ColorEdit4("Armor Color", ref armorColor);
             if (showTeam) ImGui.ColorEdit4("Team Color", ref teamColor);
             ImGui.ColorEdit4("Enemy Color", ref enemyColor);
@@ -311,29 +337,26 @@ namespace MuiltiHack
             if (bombPlanted && !_bombTimerWindowOpen)
                 _bombTimerWindowOpen = true;
 
-            if (_bombTimerWindowOpen)
+            ImGui.Begin("Bomb Timer", ref _bombTimerWindowOpen);
+
+            if (bombPlanted)
             {
-                ImGui.Begin("Bomb Timer", ref _bombTimerWindowOpen);
+                ImGui.TextColored(greenColor, "BOMB PLANTED");
+                ImGui.Text($"Time left: {timeLeft}s");
 
-                if (bombPlanted)
-                {
-                    ImGui.TextColored(greenColor, "BOMB PLANTED");
-                    ImGui.Text($"Time left: {timeLeft}s");
-
-                    if (timeLeft <= 10 && timeLeft > 5 && enableCustomSoundBombTimer)
-                        PlayBombSound("bombSoundAt10sec.mp3");
-                    else if (timeLeft <= 5 && enableCustomSoundBombTimer)
-                        PlayBombSound("5secBomb.mp3");
-                    else if (timeLeft < 4)
-                        ImGui.Text("WARNING: Bomb about to explode!");
-                }
-                else
-                {
-                    ImGui.TextColored(redColor, "Bomb not planted");
-                }
-
-                ImGui.End();
+                if (timeLeft <= 10 && timeLeft > 5 && enableCustomSoundBombTimer)
+                    PlayBombSound("bombSoundAt10sec.mp3");
+                else if (timeLeft <= 5 && enableCustomSoundBombTimer)
+                    PlayBombSound("5secBomb.mp3");
+                else if (timeLeft < 4)
+                    ImGui.Text("WARNING: Bomb about to explode!");
             }
+            else
+            {
+                ImGui.TextColored(redColor, "Bomb not planted");
+            }
+
+            ImGui.End();
         }
 
         private void PlayBombSound(string fileName)
@@ -390,7 +413,7 @@ namespace MuiltiHack
             if (localPlayer == null) return;
 
             var center = screenSize / 2;
-            var radius =  FOV;
+            var radius = FOV;
             ImGui.GetWindowDrawList().AddCircle(center, radius, ImGui.ColorConvertFloat4ToU32(circleColor));
         }
 
@@ -428,7 +451,7 @@ namespace MuiltiHack
         #region ESP Rendering Methods
         private void DrawBox(Entity entity)
         {
-            if(box )
+            if (box)
             {
                 float height = entity.position2d.Y - entity.viewPosition2D.Y;
                 var color = GetEntityColor(entity, enemyColor, teamColor);
@@ -438,16 +461,14 @@ namespace MuiltiHack
 
                 ImGui.GetWindowDrawList().AddRect(topLeft, bottomRight, ImGui.ColorConvertFloat4ToU32(color));
 
-                if(!enableBones )
+                if (!enableBones)
                 {
                     var headCenter = new Vector2((topLeft.X + bottomRight.X) / 2, topLeft.Y);
                     float radius = height / 8.5f;
                     var headColor = showHelmet && entity.hasHelmet && !enableBones ? armorColor : color;
                     ImGui.GetWindowDrawList().AddCircle(headCenter, radius, ImGui.ColorConvertFloat4ToU32(headColor));
                 }
-                
             }
-            
         }
 
         private void DrawLine(Entity entity)
@@ -460,7 +481,6 @@ namespace MuiltiHack
                     entity.position2d,
                     ImGui.ColorConvertFloat4ToU32(color));
             }
-            
         }
 
         private void DrawHealthBarAndArmor(Entity entity)
@@ -502,12 +522,13 @@ namespace MuiltiHack
             }
             if (showAmmoInMag)
             {
-                var ammoPos = new Vector2(entity.viewPosition2D.X, entity.position2d.Y - 2*yOffset);
+                var ammoPos = new Vector2(entity.viewPosition2D.X, entity.position2d.Y - 2 * yOffset);
                 ImGui.GetWindowDrawList().AddText(ammoPos, ImGui.ColorConvertFloat4ToU32(nameColor), $"{entity.ammoInMag}");
             }
 
             if (enableName || weaponEsp) ImGui.SetWindowFontScale(1.0f);
         }
+
         private bool IsValidBone(List<Vector2> bones, int index)
         {
             return bones != null &&
@@ -575,10 +596,6 @@ namespace MuiltiHack
                 }
             }
         }
-        
-
-
-
         #endregion
 
         private Vector4 GetEntityColor(Entity entity, Vector4 enemyCol, Vector4 teamCol)
@@ -609,5 +626,51 @@ namespace MuiltiHack
             lock (_entityLock) return _localPlayer;
         }
         #endregion
+
+        // Класс для работы со звуком
+        public class AudioPlayer
+        {
+            private string soundsFolder;
+
+            public AudioPlayer(string soundsFolderPath)
+            {
+                // Убедимся, что папка существует
+                if (!Directory.Exists(soundsFolderPath))
+                {
+                    throw new DirectoryNotFoundException($"Папка {soundsFolderPath} не найдена!");
+                }
+
+                soundsFolder = soundsFolderPath;
+            }
+
+            public void PlaySound(string fileName, float volume = 1.0f)
+            {
+                string filePath = Path.Combine(soundsFolder, fileName);
+
+                // Проверяем, существует ли файл
+                if (!File.Exists(filePath))
+                {
+                    Console.WriteLine($"Файл {fileName} не найден в папке {soundsFolder}!");
+                    return;
+                }
+
+                // Воспроизведение MP3
+                using (var mp3Reader = new Mp3FileReader(filePath))
+                using (var waveOut = new WaveOutEvent())
+                {
+                    // Устанавливаем громкость
+                    waveOut.Volume = volume;
+
+                    waveOut.Init(mp3Reader);
+                    waveOut.Play();
+
+                    // Ожидание завершения воспроизведения
+                    while (waveOut.PlaybackState == PlaybackState.Playing)
+                    {
+                        System.Threading.Thread.Sleep(100);
+                    }
+                }
+            }
+        }
     }
 }
