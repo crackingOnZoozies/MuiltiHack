@@ -198,7 +198,7 @@ namespace MuiltiHack
                     }
                 }
             }
-            else if (renderer.aimbot || renderer.autoShoot)
+            else if (renderer.aimbot && renderer.autoShoot)
             {
                 if (GetAsyncKeyState(HOTKEY) < 0)
                 {
@@ -372,6 +372,7 @@ namespace MuiltiHack
 
         public static void AimBot(Swed swed, IntPtr client, IntPtr entityList, IntPtr localPlayerPawn, IntPtr listEntry, Renderer renderer, CancellationToken token)
         {
+            
             const int hotKeyAimSwitch = 0x06;//mouse 5 0x06;//mouse 6
 
             const int hotKeyLeft = 0x01; // mouse left
@@ -386,6 +387,7 @@ namespace MuiltiHack
             //aimbot loop
             while (true)
             {
+                Console.WriteLine($"fov : {renderer.FOV}");
                 entities.Clear();
 
 
@@ -529,16 +531,6 @@ namespace MuiltiHack
                         Vector2 newAngles = Calculate.CalculateAngles(playerView, entities[0].head);
                         Vector3 newNagles3D = new Vector3(newAngles.Y, newAngles.X, 0.0f);
 
-                        int zoomLevel = swed.ReadInt(swed.ReadPointer(localPlayerPawn, Offsets.m_pClippingWeapon), Offsets.m_zoomLevel);
-
-                        if(zoomLevel > 0 && zoomLevel<3 && !IsKnife(swed.ReadShort(swed.ReadPointer(localPlayerPawn, Offsets.m_pClippingWeapon), Offsets.m_AttributeManager + Offsets.m_Item + Offsets.m_iItemDefinitionIndex)))
-                        {
-                            localPlayer.zoomLevel = zoomLevel;
-                        }
-                        else
-                        {
-                            localPlayer.zoomLevel = 0;
-                        }
 
                         if (entities[0].pixelDistance < renderer.FOV && renderer.useFov)
                         {
@@ -554,7 +546,7 @@ namespace MuiltiHack
 
 
                         }
-
+                        
 
                     }
                 }

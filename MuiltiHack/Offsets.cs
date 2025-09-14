@@ -17,13 +17,13 @@ namespace MuiltiHack
         public static int attack2 = 0x1BEB9A0;
 
         //offsets.cs
-        public static int dwViewAngles = 0x1E3DA90;
+        public static int dwViewAngles = 0x1E3DC20;
         public static int dwLocalPlayerPawn = 0x1BF2490;
-        public static int dwEntityList = 0x1D15E08;
+        public static int dwEntityList = 0x1D15F88;
 
-        public static int dwGameRules = 0x1E2EF78;
+        public static int dwGameRules = 0x1E2F0F8;
         public static int dwPlantedC4 = 0x1E37FD0;
-        public static int dwViewMatrix = 0x1E32F70; // offset for circle
+        public static int dwViewMatrix = 0x1E330F0; // offset for circle
 
         //client.dll.cs
         public static int m_hPlayerPawn = 0x8FC;
@@ -71,8 +71,8 @@ namespace MuiltiHack
         public static int m_iClip1 = 0x1900; // int32
 
         //engine
-        public static nint dwWindowHeight = 0x8DA4D4;
-        public static nint dwWindowWidth = 0x8DA4D0;
+        public static nint dwWindowHeight = 0x8DA4EC;
+        public static nint dwWindowWidth = 0x8DA4E8;
 
 
         public static bool bBombPlanted = false;

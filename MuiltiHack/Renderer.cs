@@ -410,7 +410,11 @@ namespace MuiltiHack
         private void DrawFovCircle()
         {
             var localPlayer = GetLocalPlayer();
-            if (localPlayer == null) return;
+            if (localPlayer == null)
+            {
+                Console.WriteLine("-------------------------------------------");
+                return;
+            }
 
             var center = screenSize / 2;
             var radius = FOV;
