@@ -10,25 +10,25 @@ namespace MuiltiHack
     {
 
         //buttons.cs
-        public static int attack = 0x1BEB910;
-        public static int jump = 0x1BEBE20;
-        public static int duck = 0x1BEBEB0;
-        public static int lookatweapon = 0x1E3D200;
-        public static int attack2 = 0x1BEB9A0;
+        public static int attack = 0x1BDA310;
+        public static int jump = 0x1BDA820;
+        public static int duck = 0x1BDA8B0;
+        public static int lookatweapon = 0x1E2C590;
+        public static int attack2 = 0x1BDA3A0;
 
         //offsets.cs
-        public static int dwViewAngles = 0x1E3DC20;
-        public static int dwLocalPlayerPawn = 0x1BF2490;
-        public static int dwEntityList = 0x1D15F88;
+        public static int dwViewAngles = 0x1E2CE20;
+        public static int dwLocalPlayerPawn = 0x1BE0E90;
+        public static int dwEntityList = 0x1D05458;
 
-        public static int dwGameRules = 0x1E2F0F8;
-        public static int dwPlantedC4 = 0x1E37FD0;
-        public static int dwViewMatrix = 0x1E330F0; // offset for circle
+        public static int dwGameRules = 0x1E21450;
+        public static int dwPlantedC4 = 0x1E27910;
+        public static int dwViewMatrix = 0x1E22220; // offset for circle
 
         //client.dll.cs
         public static int m_hPlayerPawn = 0x8FC;
         public static int m_iHealth = 0x34C;
-        public static int m_vOldOrigin = 0x15B0;
+        public static int m_vOldOrigin = 0x15B8;
         public static int m_iTeamNum = 0x3EB;
         public static int m_vecViewOffset = 0xD98;
         public static int m_lifeState = 0x350;
@@ -36,43 +36,43 @@ namespace MuiltiHack
         public static int m_modelState = 0x190; // head
         public static int m_pGameSceneNode = 0x330;
 
-        public static int m_entitySpottedState = 0x2710;
+        public static int m_entitySpottedState = 0x2718;
         public static int m_bSpotted = 0x8;
 
         public static int m_iIDEntIndex = 0x3EDC;
 
         public static int m_bIsScoped = 0x2728;// bool
 
-        public static int m_aimPunchAngle = 0x16F4;
-        public static int m_iShotsFired = 0x273C;
-        public static int m_flFlashBangTime = 0x160C;
+        public static int m_aimPunchAngle = 0x16FC;
+        public static int m_iShotsFired = 0x2744;
+        public static int m_flFlashBangTime = 0x1614;
 
         public static int m_fFlags = 0x3F8;
 
         public static int m_iszPlayerName = 0x6E8;
 
-        public static int m_pCameraServices = 0x1438;
+        public static int m_pCameraServices = 0x1440;
         public static int m_iFOV = 0x288;
 
         public static int m_pClippingWeapon = 0x3DF0;
         public static int m_iItemDefinitionIndex = 0x1BA;
-        public static int m_AttributeManager = 0x13A0;
+        public static int m_AttributeManager = 0x13A8;
         public static int m_Item = 0x50;
 
         public static int m_bBombPlanted = 0x9A5; // bool
-        public static int m_bOldIsScoped = 0x276C; // bool
-        public static int m_zoomLevel = 0x1E10; // int32
+        public static int m_bOldIsScoped = 0x2774; // bool
+        public static int m_zoomLevel = 0x1F90; // int32
 
-        public static int m_bPrevDefuser = 0x16DE; // bool
-        public static int m_bPrevHelmet = 0x16DF; // bool
-        public static int m_nPrevArmorVal = 0x16E0;
-        public static int m_bIsDefusing = 0x272A; // bool
+        public static int m_bPrevDefuser = 0x16E6; // bool
+        public static int m_bPrevHelmet = 0x16E7; // bool
+        public static int m_nPrevArmorVal = 0x16E8;
+        public static int m_bIsDefusing = 0x2732; // bool
 
-        public static int m_iClip1 = 0x1900; // int32
+        public static int m_iClip1 = 0x1908; // int32
 
         //engine
-        public static nint dwWindowHeight = 0x8DA4EC;
-        public static nint dwWindowWidth = 0x8DA4E8;
+        public static nint dwWindowHeight = 0x8E967C;
+        public static nint dwWindowWidth = 0x8E9678;
 
 
         public static bool bBombPlanted = false;
