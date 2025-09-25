@@ -10,20 +10,20 @@ namespace MuiltiHack
     {
 
         //buttons.cs
-        public static int attack = 0x1BDA310;
-        public static int jump = 0x1BDA820;
-        public static int duck = 0x1BDA8B0;
-        public static int lookatweapon = 0x1E2C590;
-        public static int attack2 = 0x1BDA3A0;
+        public static int attack = 0x1BD9310;
+        public static int jump = 0x1BD9820;
+        public static int duck = 0x1BD98B0;
+        public static int lookatweapon = 0x1E2B5B0;
+        public static int attack2 = 0x1BD93A0;
 
         //offsets.cs
-        public static int dwViewAngles = 0x1E2CE20;
-        public static int dwLocalPlayerPawn = 0x1BE0E90;
-        public static int dwEntityList = 0x1D05458;
+        public static int dwViewAngles = 0x1E2BE40;
+        public static int dwLocalPlayerPawn = 0x1BDFE90;
+        public static int dwEntityList = 0x1D04458;
 
-        public static int dwGameRules = 0x1E21450;
-        public static int dwPlantedC4 = 0x1E27910;
-        public static int dwViewMatrix = 0x1E22220; // offset for circle
+        public static int dwGameRules = 0x1E204C8;
+        public static int dwPlantedC4 = 0x1E26930;
+        public static int dwViewMatrix = 0x1E21230; // offset for circle
 
         //client.dll.cs
         public static int m_hPlayerPawn = 0x8FC;
@@ -41,7 +41,7 @@ namespace MuiltiHack
 
         public static int m_iIDEntIndex = 0x3EDC;
 
-        public static int m_bIsScoped = 0x2728;// bool
+        public static int m_bIsScoped = 0x2730;// bool
 
         public static int m_aimPunchAngle = 0x16FC;
         public static int m_iShotsFired = 0x2744;
